@@ -1,55 +1,50 @@
-// demo.js — Navigation and Page Linking for Hanging Libraries
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
 
-document.addEventListener("DOMContentLoaded", () => {
-  // Map of page routes (assumes all files are in the same folder)
-  const routes = {
-    home: "HomePage.html",
-    search: "Search page.html",
-    browse: "Browse page.html",
-    results: "result page.html",
-    profile: "Edit Profile.html",
-  };
+const PORT = 80;
+const ROOT = __dirname;
 
-  // Apply navbar link logic dynamically if buttons exist
-  const navButtons = {
-    search: document.querySelector(".nav-btn:nth-child(1)"),
-    browse: document.querySelector(".nav-btn:nth-child(2)"),
-    profile: document.querySelector(".nav-btn:nth-child(3)"),
-  };
+const MIME_TYPES = {
+  '.html': 'text/html',
+  '.js': 'application/javascript',
+  '.css': 'text/css',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.json': 'application/json',
+  '.txt': 'text/plain'
+};
 
-  if (navButtons.search) {
-    navButtons.search.addEventListener("click", () => {
-      window.location.href = routes.search;
-    });
+const server = http.createServer((req, res) => {
+  let reqPath = req.url.split('?')[0]; 
+  if (reqPath === '/' || reqPath.toLowerCase() === '/index.html') {
+    reqPath = '/HomePage.html';
   }
 
-  if (navButtons.browse) {
-    navButtons.browse.addEventListener("click", () => {
-      window.location.href = routes.browse;
-    });
-  }
+  const filePath = path.join(ROOT, reqPath);
+  const ext = path.extname(filePath).toLowerCase();
+  const contentType = MIME_TYPES[ext] || 'text/plain';
 
-  if (navButtons.profile) {
-    navButtons.profile.addEventListener("click", () => {
-      window.location.href = routes.profile;
-    });
-  }
-
-  // Special handling for Search page input → Result page
-  const searchInput = document.querySelector("input[type='text']");
-  if (searchInput) {
-    searchInput.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        const query = searchInput.value.trim();
-        if (query.length > 0) {
-          window.location.href = `${routes.results}?query=${encodeURIComponent(query)}`;
-        } else {
-          alert("Please enter a search term.");
-        }
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      if (err.code === 'ENOENT') {
+        res.writeHead(404, { 'Content-Type': 'text/html' });
+        res.end('<h1>404 - File Not Found</h1>', 'utf8');
+      } else {
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end(`Server error: ${err.code}`);
       }
-    });
-  }
+    } else {
+      res.writeHead(200, { 'Content-Type': contentType });
+      res.end(data, 'utf8');
+    }
+  });
+});
 
-  console.log("demo.js loaded successfully ✅");
+server.listen(PORT, () => {
+  console.log('Hanging Libraries running on http://localhost/');
 });
