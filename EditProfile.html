@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Profile - Hanging Libraries</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+    body {
+      background-image: url('peakpx.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #2c2c2c;
+    }
+
+    .navbar {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(8px);
+      padding: 15px 0;
+      border-bottom: 2px solid #ccc;
+      position: fixed;
+      top: 0;
+      width: 100%;
+      z-index: 10;
+    }
+
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #EAEAEA;
+      padding: 8px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      transition: background 0.3s;
+    }
+
+    .nav-btn:hover { background: #d6d6d6; }
+
+    .title {
+      margin-top: 130px;
+      background: #8A4F2A;
+      color: white;
+      padding: 12px 30px;
+      font-size: 22px;
+      border-radius: 28px;
+      font-weight: 600;
+    }
+
+    .profile-container {
+      margin-top: 40px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 15px;
+      width: 85%;
+      max-width: 600px;
+      padding: 30px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .profile-pic {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #8A4F2A;
+      margin-bottom: 15px;
+    }
+
+    .upload-btn {
+      background: #EAEAEA;
+      border: none;
+      padding: 6px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      margin-bottom: 20px;
+    }
+
+    form {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    label {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .section-title {
+      margin-top: 20px;
+      font-weight: 700;
+      color: #8A4F2A;
+      border-bottom: 2px solid #ccc;
+      padding-bottom: 4px;
+    }
+
+    .save-btn {
+      background: #8A4F2A;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: background 0.3s;
+    }
+
+    .save-btn:hover { background: #6f3f23; }
+  </style>
+</head>
+<body>
+
+  <div class="navbar">
+    <button class="nav-btn" onclick="location.href='HomePage.html'">🏠 HOME</button>
+    <button class="nav-btn" onclick="location.href='SearchPage.html'">🔍 SEARCH</button>
+    <button class="nav-btn" onclick="location.href='BrowsePage.html'">☰ BROWSE</button>
+  </div>
+
+  <div class="title">EDIT PROFILE</div>
+
+  <div class="profile-container">
+    <img src="peakpx.jpg" alt="Profile Picture" class="profile-pic" id="profilePic" />
+    <input type="file" id="profileUpload" accept="image/*" style="display:none;">
+    <button class="upload-btn" onclick="document.getElementById('profileUpload').click()">Change Picture</button>
+
+    <form id="editProfileForm">
+      <div class="section-title">Account Information</div>
+      <label for="fullName">Full Name</label>
+      <input type="text" id="fullName" placeholder="John Doe" required>
+
+      <label for="email">Email</label>
+      <input type="email" id="email" placeholder="john.doe@email.com" required>
+
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="Enter new password">
+
+      <div class="section-title">Membership Details</div>
+      <label for="memberID">Membership ID</label>
+      <input type="text" id="memberID" placeholder="Auto-filled ID" disabled>
+
+      <label for="status">Membership Status</label>
+      <select id="status" disabled>
+        <option>Loading...</option>
+      </select>
+
+      <label for="expiration">Membership Expiration</label>
+      <input type="date" id="expiration" disabled>
+
+      <div class="section-title">Contact Information</div>
+      <label for="address">Address</label>
+      <input type="text" id="address" placeholder="123 Library Lane">
+
+      <label for="phone">Phone</label>
+      <input type="tel" id="phone" placeholder="(555) 123-4567">
+
+      <div class="section-title">Account Role</div>
+      <label for="role">Account Type</label>
+      <select id="role" disabled>
+        <option>Loading...</option>
+      </select>
+
+      <div class="section-title">Fees & Balances</div>
+      <label for="balance">Outstanding Balance</label>
+      <input type="text" id="balance" value="$0.00" disabled>
+
+      <button type="submit" class="save-btn">Save Changes</button>
+    </form>
+  </div>
+
+  <script>
+    const simulatedUserData = {
+      fullName: "John Doe",
+      email: "john.doe@library.com",
+      membershipID: "MBR-1042",
+      membershipStatus: "Active",
+      expirationDate: "2026-01-15",
+      address: "123 Library Lane",
+      phone: "(555) 321-7890",
+      accountType: "Member",
+      balance: "$2.50"
+    };
+
+    function populateUserData(user) {
+      document.getElementById('fullName').value = user.fullName;
+      document.getElementById('email').value = user.email;
+      document.getElementById('memberID').value = user.membershipID;
+      document.getElementById('status').innerHTML = `<option>${user.membershipStatus}</option>`;
+      document.getElementById('expiration').value = user.expirationDate;
+      document.getElementById('address').value = user.address;
+      document.getElementById('phone').value = user.phone;
+      document.getElementById('role').innerHTML = `<option>${user.accountType}</option>`;
+      document.getElementById('balance').value = user.balance;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(() => {
+        populateUserData(simulatedUserData);
+      }, 800);
+    });
+
+    document.getElementById('profileUpload').addEventListener('change', function(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = e => document.getElementById('profilePic').src = e.target.result;
+        reader.readAsDataURL(file);
+      }
+    });
+
+    document.getElementById('editProfileForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      alert('Profile updated successfully (database save to be added later).');
+    });
+  </script>
+</body>
+</html>
