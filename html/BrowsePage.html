@@ -9,7 +9,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
 
     body {
-      background-image: url('peakpx.jpg');
+      background-image: url('../src/peakpx.jpg');
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -128,9 +128,9 @@
 <body>
 
   <div class="navbar">
-    <button class="nav-btn" onclick="location.href='HomePage.html'">🏠 HOME</button>
-    <button class="nav-btn" onclick="location.href='SearchPage.html'">🔍 SEARCH</button>
-    <button class="nav-btn" onclick="location.href='EditProfile.html'">👤 PROFILE</button>
+    <button class="nav-btn" onclick="location.href='../html/HomePage.html'">🏠 HOME</button>
+    <button class="nav-btn" onclick="location.href='../html/SearchPage.html'">🔍 SEARCH</button>
+    <button class="nav-btn" onclick="location.href='../html/EditProfile.html'">👤 PROFILE</button>
   </div>
 
   <div class="title">BROWSE COLLECTION</div>
@@ -140,12 +140,12 @@
 
   <script>
     const allBooks = [
-      { title: "The Silent Library", author: "Maria Green", isbn: "978-0451524935", desc: "A mysterious story about hidden knowledge.", img: "peakpx.jpg" },
-      { title: "Gardens of Words", author: "Liam Carter", isbn: "978-0140449136", desc: "Exploring the beauty of books through the ages.", img: "peakpx.jpg" },
-      { title: "Digital Alexandria", author: "Aisha Noor", isbn: "978-0061120084", desc: "A futuristic look at digital libraries.", img: "peakpx.jpg" },
-      { title: "Ink and Ivy", author: "Hana Lee", isbn: "978-1501124020", desc: "A poet's story of finding creativity in solitude.", img: "peakpx.jpg" },
-      { title: "Boundless Shelves", author: "James Patel", isbn: "978-0140283334", desc: "Tales from the grandest library in history.", img: "peakpx.jpg" },
-      { title: "Echoes of Paper", author: "Noah Rivera", isbn: "978-0307387899", desc: "Letters that changed the world.", img: "peakpx.jpg" }
+      { title: "The Silent Library", author: "Maria Green", isbn: "978-0451524935", desc: "A mysterious story about hidden knowledge.", img: "../src/peakpx.jpg" },
+      { title: "Gardens of Words", author: "Liam Carter", isbn: "978-0140449136", desc: "Exploring the beauty of books through the ages.", img: "../src/peakpx.jpg" },
+      { title: "Digital Alexandria", author: "Aisha Noor", isbn: "978-0061120084", desc: "A futuristic look at digital libraries.", img: "../src/peakpx.jpg" },
+      { title: "Ink and Ivy", author: "Hana Lee", isbn: "978-1501124020", desc: "A poet's story of finding creativity in solitude.", img: "../src/peakpx.jpg" },
+      { title: "Boundless Shelves", author: "James Patel", isbn: "978-0140283334", desc: "Tales from the grandest library in history.", img: "../src/peakpx.jpg" },
+      { title: "Echoes of Paper", author: "Noah Rivera", isbn: "978-0307387899", desc: "Letters that changed the world.", img: "../src/peakpx.jpg" }
     ];
 
     let loadedCount = 0;
