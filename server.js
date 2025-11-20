@@ -4,31 +4,87 @@ import { fileURLToPath } from "url";
 
 const app = express();
 
-// handle json/form data
+// Parse JSON / form bodies
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Resolve directory
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// serve all files in this folder
+// Serve all HTML, images, CSS, JS from same folder
 app.use(express.static(__dirname));
 
-// main page
+/* =======================================================
+   LOGIN + SIMPLE AUTH (placeholder until real DB)
+======================================================= */
+
+// Fake login check
+app.post("/api/login", (req, res) => {
+  const { username, password } = req.body;
+
+  console.log("Login attempt:", username);
+
+  // STAFF login
+  if (username === "admin" && password === "password") {
+    return res.json({ success: true, role: "staff" });
+  }
+
+  // MEMBER login
+  if (username === "user" && password === "password") {
+    return res.json({ success: true, role: "member" });
+  }
+
+  res.json({ success: false });
+});
+
+/* =======================================================
+   PROTECTED PAGES
+======================================================= */
+
+app.get("/EditProfile.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "login.html"));
+});
+
+app.get("/StaffPage.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "login.html"));
+});
+
+app.get("/ManageCatalog.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "login.html"));
+});
+
+app.get("/ModifyMember.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "login.html"));
+});
+
+app.get("/CheckoutsList.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "login.html"));
+});
+
+/* =======================================================
+   HOME PAGE
+======================================================= */
+
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "HomePage.html"));
 });
 
-// search backend
+/* =======================================================
+   SEARCH BACKEND (Redirect to ResultsPage)
+======================================================= */
+
 app.post("/api/search", (req, res) => {
   const { query } = req.body;
-  console.log("Search request:", query);
+  console.log("Search:", query);
 
-  // go to results page even before backend is ready
-  res.redirect("/resultPage.html");
+  res.redirect(`/ResultPage.html?query=${encodeURIComponent(query)}`);
 });
 
-// browse backend
+/* =======================================================
+   BROWSE BACKEND
+======================================================= */
+
 app.get("/api/browse", (req, res) => {
   console.log("Browse request");
 
@@ -38,25 +94,34 @@ app.get("/api/browse", (req, res) => {
   });
 });
 
-// edit profile backend
+/* =======================================================
+   EDIT PROFILE BACKEND
+======================================================= */
+
 app.post("/api/editProfile", (req, res) => {
   const { username, password, preferences } = req.body;
-  console.log("Profile update:", { username, password, preferences });
 
-  res.json({
-    success: true
-  });
+  console.log("Profile updated:", { username, password, preferences });
+
+  res.json({ success: true });
 });
 
-// results backend
+/* =======================================================
+   RESULTS BACKEND
+======================================================= */
+
 app.get("/api/results", (req, res) => {
-  console.log("Results request");
+  console.log("Results requested");
 
   res.json({
     success: true,
     data: []
   });
 });
+
+/* =======================================================
+   START SERVER
+======================================================= */
 
 const PORT = 80;
 app.listen(PORT, () => {
