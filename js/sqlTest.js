@@ -57,8 +57,8 @@ function tableSearch(table, column, searchTerm){
 //Prepared statement testing
 function tableSearchPrepared(table, column, searchTerm){
 	const sqlQuery = "SELECT * FROM ? WHERE ? LIKE '%?%'";
-	const array = [table, column, searchTerm];
-	connection.query(sqlQuery, [table,column,searchTerm], (error,results) => {
+	const array = [(table, column, searchTerm)];
+	connection.query(sqlQuery, array, (error,results) => {
 		if (error){
 			console.error('Error executing query:', error);
 			return;
@@ -67,9 +67,21 @@ function tableSearchPrepared(table, column, searchTerm){
 	});
 };
 
-//Prepared statement user creation
-function createMember(
-
+//Login function
+function login(username,password){
+	const sqlQuery = "SELECT * FROM ACCOUNT WHERE Pref_EMAIL = '"+username+ "' AND Password = '" + password+"'";
+	connection.query(sqlQuery, (error,results) => {
+		if (error){
+			console.error('Error logging in: ', error);
+			return;
+		}
+		if (results.length === 0){
+			console.log('Login unsucessful, check username and password');
+			return;
+		};
+		console.log('Login successful for user: ', results);
+	});
+};
 
 //Run query function with search term
 //bookTitleSearch('optics')
@@ -77,6 +89,10 @@ function createMember(
 //Run query function with table, column, and search term
 tableSearch('BOOKS', 'TITLE', 'optics');
 
-tableSearchPrepared('BOOKS','TITLE','optics');
+//tableSearchPrepared('BOOKS','TITLE','optics');
+
+//Login function
+login('test@hanginglibraries.com','testPassword');
+
 //close connection
 connection.end();
