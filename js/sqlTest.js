@@ -41,7 +41,8 @@ function bookTitleSearch(searchTerm){
 };
 
 //Generalizing above function even more
-
+//Though probably best to hard code table and column in practice. 
+//But also don't need to specifically avoid injection attacks so should be fine
 function tableSearch(table, column, searchTerm){
 	const sqlQuery = "SELECT * FROM " + table + " WHERE " + column + " LIKE '%" + searchTerm + "%'";
 	connection.query(sqlQuery, (error,results) => {
@@ -53,11 +54,45 @@ function tableSearch(table, column, searchTerm){
 	});
 };
 
+//Prepared statement testing
+function tableSearchPrepared(table, column, searchTerm){
+	const sqlQuery = "SELECT * FROM ? WHERE ? LIKE '%?%'";
+	const array = [(table, column, searchTerm)];
+	connection.query(sqlQuery, array, (error,results) => {
+		if (error){
+			console.error('Error executing query:', error);
+			return;
+		}
+		console.log('Query for "' + searchTerm + '" search results:', results);
+	});
+};
+
+//Login function
+function login(username,password){
+	const sqlQuery = "SELECT * FROM ACCOUNT WHERE Pref_EMAIL = '"+username+ "' AND Password = '" + password+"'";
+	connection.query(sqlQuery, (error,results) => {
+		if (error){
+			console.error('Error logging in: ', error);
+			return;
+		}
+		if (results.length === 0){
+			console.log('Login unsucessful, check username and password');
+			return;
+		};
+		console.log('Login successful for user: ', results);
+	});
+};
+
 //Run query function with search term
 //bookTitleSearch('optics')
 
 //Run query function with table, column, and search term
-tableSearch('BOOKS', 'TITLE', 'optics')
+tableSearch('BOOKS', 'TITLE', 'optics');
+
+//tableSearchPrepared('BOOKS','TITLE','optics');
+
+//Login function
+login('test@hanginglibraries.com','testPassword');
 
 //close connection
 connection.end();
