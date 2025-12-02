@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Profile - Hanging Libraries</title>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; }
+
+    body {
+      background-image: url('peakpx.jpg');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #2c2c2c;
+    }
+
+    /* NAVBAR */
+    .navbar {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(8px);
+      padding: 15px 0;
+      border-bottom: 2px solid #ccc;
+      position: fixed;
+      top: 0;
+      width: 100%;
+      z-index: 10;
+    }
+
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #EAEAEA;
+      padding: 8px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      transition: background 0.3s;
+    }
+    .nav-btn:hover { background-color: #d6d6d6; }
+
+    .title {
+      margin-top: 130px;
+      background: #8A4F2A;
+      color: white;
+      padding: 12px 30px;
+      font-size: 22px;
+      border-radius: 28px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    /* MAIN CARD */
+    .profile-container {
+      margin-top: 40px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 15px;
+      width: 85%;
+      max-width: 600px;
+      padding: 30px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .profile-pic {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #8A4F2A;
+      margin-bottom: 12px;
+    }
+
+    .upload-btn {
+      background: #EAEAEA;
+      border: none;
+      padding: 6px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      margin-bottom: 20px;
+    }
+
+    form {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    label {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    .section-title {
+      margin-top: 20px;
+      font-weight: 700;
+      color: #8A4F2A;
+      border-bottom: 2px solid #ccc;
+      padding-bottom: 4px;
+    }
+
+    .save-btn {
+      background: #8A4F2A;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 20px;
+    }
+    .save-btn:hover {
+      background: #6f3f23;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- NAVBAR -->
+  <div class="navbar">
+    <button class="nav-btn" onclick="location.href='homePage.html'">🏛 HOME</button>
+    <button class="nav-btn" onclick="location.href='searchPage.html'">🔍 SEARCH</button>
+    <button class="nav-btn" onclick="location.href='browsePage.html'">☰ BROWSE</button>
+    <button class="nav-btn" onclick="location.href='editProfilePage.html'">👤 PROFILE</button>
+
+    <button class="nav-btn" id="staffBtn" style="display:none;">🛠 STAFF</button>
+
+    <button class="nav-btn" id="loginLogoutBtn">🔐 LOGIN</button>
+  </div>
+
+  <div class="title">EDIT PROFILE</div>
+
+  <div class="profile-container">
+    <img src="peakpx.jpg" id="profilePic" class="profile-pic">
+
+    <input type="file" id="profileUpload" accept="image/*" style="display:none;">
+    <button class="upload-btn" onclick="document.getElementById('profileUpload').click()">Change Picture</button>
+
+    <form id="editProfileForm">
+
+      <div class="section-title">Account Information</div>
+
+      <label>Full Name</label>
+      <input type="text" id="fullName">
+
+      <label>Email</label>
+      <input type="email" id="email">
+
+      <label>Password</label>
+      <input type="password" id="password" placeholder="Leave blank to keep password">
+
+      <div class="section-title">Membership Details</div>
+
+      <label>Membership ID</label>
+      <input type="text" id="memberID" disabled>
+
+      <label>Status</label>
+      <select id="status" disabled></select>
+
+      <label>Expiration</label>
+      <input type="date" id="expiration" disabled>
+
+      <div class="section-title">Contact Information</div>
+
+      <label>Address</label>
+      <input type="text" id="address">
+
+      <label>Phone</label>
+      <input type="tel" id="phone">
+
+      <div class="section-title">Account Type</div>
+      <select id="role" disabled></select>
+
+      <div class="section-title">Account Balance</div>
+      <input type="text" id="balance" disabled>
+
+      <button type="submit" class="save-btn">Save Changes</button>
+    </form>
+  </div>
+
+<script>
+/* ==========================================================
+   LOGIN REQUIREMENT
+========================================================== */
+if (!localStorage.getItem("sessionUser")) {
+  alert("Please log in first.");
+  window.location.href = "loginPage.html";
+}
+
+/* ==========================================================
+   NAVBAR BEHAVIOR
+========================================================== */
+const loginBtn = document.getElementById("loginLogoutBtn");
+loginBtn.textContent = localStorage.getItem("sessionUser") ? "🚪 LOGOUT" : "🔐 LOGIN";
+
+loginBtn.onclick = () => {
+  if (localStorage.getItem("sessionUser")) {
+    localStorage.clear();
+    alert("Logged out.");
+  }
+  window.location.href = "loginPage.html";
+};
+
+/* STAFF BUTTON */
+if (localStorage.getItem("sessionRole") === "staff") {
+  const s = document.getElementById("staffBtn");
+  s.style.display = "flex";
+  s.onclick = () => window.location.href = "staffPage.html";
+}
+
+/* ==========================================================
+   LOAD USER FROM DATABASE
+========================================================== */
+async function loadProfile() {
+  const username = localStorage.getItem("sessionUser");
+
+  const req = await fetch(`/getUserProfile?username=${username}`);
+  const data = await req.json();
+
+  if (!data.success) {
+    alert("Error loading profile.");
+    return;
+  }
+
+  const u = data.user;
+
+  document.getElementById("fullName").value = u.fullName || "";
+  document.getElementById("email").value = u.email || "";
+  document.getElementById("memberID").value = u.membershipID || "";
+  document.getElementById("status").innerHTML = `<option>${u.membershipStatus}</option>`;
+  document.getElementById("expiration").value = u.expirationDate || "";
+  document.getElementById("address").value = u.address || "";
+  document.getElementById("phone").value = u.phone || "";
+  document.getElementById("role").innerHTML = `<option>${u.role}</option>`;
+  document.getElementById("balance").value = "$" + (u.balance || "0.00");
+}
+
+document.addEventListener("DOMContentLoaded", loadProfile);
+
+/* ==========================================================
+   UPDATE PROFILE INTO DATABASE
+========================================================== */
+document.getElementById("editProfileForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const payload = {
+    username: localStorage.getItem("sessionUser"),
+    fullName: document.getElementById("fullName").value,
+    email: document.getElementById("email").value,
+    password: document.getElementById("password").value,
+    address: document.getElementById("address").value,
+    phone: document.getElementById("phone").value
+  };
+
+  const req = await fetch("/updateProfile", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  const res = await req.json();
+
+  if (res.success) {
+    alert("Profile updated!");
+  } else {
+    alert("Failed to update profile.");
+  }
+});
+
+/* ==========================================================
+   PROFILE PICTURE PREVIEW
+========================================================== */
+document.getElementById("profileUpload").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const r = new FileReader();
+  r.onload = (preview) => {
+    document.getElementById("profilePic").src = preview.target.result;
+  };
+  r.readAsDataURL(file);
+});
+</script>
+
+</body>
+</html>
+~

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Staff Dashboard - Hanging Libraries</title>
+
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Segoe UI", Tahoma, sans-serif; }
+
+  body {
+    background-image: url('peakpx.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* NAVBAR */
+  .navbar {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(8px);
+    padding: 15px 0;
+    border-bottom: 2px solid #ccc;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 10;
+  }
+
+  .nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #EAEAEA;
+    padding: 8px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    border: none;
+    font-size: 14px;
+    transition: background 0.3s;
+  }
+
+  .nav-btn:hover { background-color: #d6d6d6; }
+
+  /* TITLE */
+  .title {
+    margin-top: 130px;
+    background: #8A4F2A;
+    color: white;
+    padding: 12px 30px;
+    font-size: 22px;
+    border-radius: 28px;
+    font-weight: 600;
+  }
+
+  /* BUTTON GRID */
+  .menu-container {
+    margin-top: 40px;
+    width: 90%;
+    max-width: 650px;
+    background: rgba(255,255,255,0.92);
+    padding: 25px;
+    border-radius: 14px;
+    box-shadow: 0 0 12px rgba(0,0,0,0.3);
+  }
+
+  .menu-btn {
+    background-color: #EAEAEA;
+    padding: 18px;
+    margin-bottom: 18px;
+    border-radius: 8px;
+    font-size: 18px;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+
+  .menu-btn:hover { background-color: #d6d6d6; }
+</style>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<div class="navbar">
+    <button class="nav-btn" onclick="location.href='homePage.html'">🏛 HOME</button>
+    <button class="nav-btn" onclick="location.href='searchPage.html'">🔍 SEARCH</button>
+    <button class="nav-btn" onclick="location.href='browsePage.html'">☰ BROWSE</button>
+    <button class="nav-btn" onclick="location.href='editProfilePage.html'">👤 PROFILE</button>
+    <button class="nav-btn" id="loginLogoutBtn">🔐 LOGIN</button>
+</div>
+
+<div class="title">🛠 Staff Dashboard</div>
+
+<div class="menu-container">
+
+    <!-- FIXED FILE LINKS HERE -->
+    <div class="menu-btn" onclick="location.href='manageCatalog.html'">📚 Manage Catalog</div>
+    <div class="menu-btn" onclick="location.href='modifyMember.html'">👥 Manage Member Accounts</div>
+    <div class="menu-btn" onclick="location.href='staffCheckoutsPage.html'">📘 View Checkouts</div>
+    <div class="menu-btn" onclick="location.href='staffWaitlistPage.html'">🕒 Manage Waitlists</div>
+
+</div>
+
+<script>
+/* LOGIN / LOGOUT BUTTON */
+function isLoggedIn() { return localStorage.getItem("sessionUser") !== null; }
+function getRole() { return localStorage.getItem("sessionRole"); }
+
+// STAFF-ONLY PROTECTOR
+if (!isLoggedIn()) {
+    alert("You must be logged in.");
+    window.location.href = "loginPage.html";
+} else if (getRole() !== "staff") {
+    alert("Staff access only.");
+    window.location.href = "homePage.html";
+}
+
+const loginBtn = document.getElementById("loginLogoutBtn");
+loginBtn.textContent = isLoggedIn() ? "🚪 LOGOUT" : "🔐 LOGIN";
+loginBtn.onclick = () => {
+  if (isLoggedIn()) {
+    localStorage.clear();
+  }
+  window.location.href = "loginPage.html";
+};
+</script>
+
+</body>
+</html>
