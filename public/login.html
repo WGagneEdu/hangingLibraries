@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login – Hanging Libraries</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="navbar">
+  <button class="nav-btn" onclick="location.href='index.html'">🏛 HOME</button>
+  <button class="nav-btn" onclick="location.href='search.html'">🔍 SEARCH</button>
+  <button class="nav-btn" onclick="location.href='browse.html'">☰ BROWSE</button>
+</div>
+
+<div class="login-container">
+  <h2>Log In to Hanging Libraries</h2>
+
+  <input
+    type="text"
+    id="identifier"
+    class="input-field"
+    placeholder="Email or Member ID"
+    autocomplete="off">
+
+  <input
+    type="password"
+    id="password"
+    class="input-field"
+    placeholder="Password">
+
+  <button class="login-btn" id="loginBtn">Log In</button>
+
+  <div class="helper">
+    Members and staff both log in here. Use your email or your numeric member ID.
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+async function doLogin() {
+  const identifier = document.getElementById("identifier").value.trim();
+  const password = document.getElementById("password").value.trim();
+
+  if (!identifier || !password) {
+    alert("Please enter both identifier and password.");
+    return;
+  }
+
+  const data = await apiPOST("/api/login", { identifier, password });
+  if (!data.success) {
+    alert("Login failed. Check email/ID and password.");
+    return;
+  }
+
+  localStorage.setItem("sessionMemberId", data.memberId);
+  localStorage.setItem("sessionRole", data.role);
+
+  if (data.role === "staff") {
+    window.location.href = "staff.html";
+  } else {
+    window.location.href = "index.html";
+  }
+}
+
+document.getElementById("loginBtn").addEventListener("click", doLogin);
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") doLogin();
+});
+</script>
+
+</body>
+</html>

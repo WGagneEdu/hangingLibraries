@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Edit Profile – Hanging Libraries</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="navbar">
+  <button class="nav-btn" onclick="location.href='index.html'">🏛 HOME</button>
+  <button class="nav-btn" onclick="location.href='search.html'">🔍 SEARCH</button>
+  <button class="nav-btn" onclick="location.href='browse.html'">☰ BROWSE</button>
+
+  <button class="nav-btn" id="staffBtn">🛠 STAFF</button>
+  <button class="nav-btn" id="loginLogoutBtn">🔐 LOGIN</button>
+</div>
+
+<div class="page-title">EDIT PROFILE</div>
+
+<div class="content-card profile-container">
+  <form id="editProfileForm">
+    <div class="section-title">Basic Info</div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="fullName">Full Name</label>
+        <input id="fullName" type="text" placeholder="First Last">
+      </div>
+      <div class="form-group">
+        <label for="dob">Date of Birth</label>
+        <input id="dob" type="date">
+      </div>
+    </div>
+
+    <div class="section-title">Contact Info</div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="email">Preferred Email</label>
+        <input id="email" type="email">
+      </div>
+      <div class="form-group">
+        <label for="phone">Preferred Phone</label>
+        <input id="phone" type="text">
+      </div>
+    </div>
+
+    <div class="section-title">Address</div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="street">Street Address</label>
+        <input id="street" type="text">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="city">City</label>
+        <input id="city" type="text">
+      </div>
+      <div class="form-group">
+        <label for="state">State</label>
+        <input id="state" type="text" maxlength="2">
+      </div>
+      <div class="form-group">
+        <label for="zip">Zip Code</label>
+        <input id="zip" type="number">
+      </div>
+    </div>
+
+    <div class="section-title">Password</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="password">Change Password (optional)</label>
+        <input id="password" type="password" placeholder="Leave blank to keep current">
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button type="submit" class="primary-btn">Save Changes</button>
+    </div>
+  </form>
+</div>
+
+<script src="app.js"></script>
+<script>
+if (!isLoggedIn()) {
+  alert("Please log in first.");
+  window.location.href = "login.html";
+}
+
+async function loadProfile() {
+  const { memberId } = getSession();
+  const data = await apiGET("/api/getUserProfile?memberId=" + encodeURIComponent(memberId));
+  if (!data.success) {
+    alert("Could not load profile.");
+    return;
+  }
+
+  const u = data.user;
+  const fullName = ((u.First_Name || "") + " " + (u.Last_Name || "")).trim();
+
+  document.getElementById("fullName").value = fullName;
+  document.getElementById("dob").value = u.Date_of_Birth ? u.Date_of_Birth.substring(0,10) : "";
+  document.getElementById("email").value = u.Pref_EMAIL || "";
+  document.getElementById("phone").value = u.Pref_PHONE_NUMBER || "";
+  document.getElementById("street").value = u.Street_Address || "";
+  document.getElementById("city").value = u.City || "";
+  document.getElementById("state").value = u.State || "";
+  document.getElementById("zip").value = u.Zip_Code || "";
+}
+
+document.getElementById("editProfileForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const { memberId } = getSession();
+
+  const fullName = (document.getElementById("fullName").value || "").trim();
+  const [firstName, ...rest] = fullName.split(" ");
+  const lastName = rest.join(" ");
+
+  const payload = {
+    memberId,
+    firstName: firstName || "",
+    lastName: lastName || "",
+    dob: document.getElementById("dob").value,
+    street: document.getElementById("street").value,
+    city: document.getElementById("city").value,
+    state: document.getElementById("state").value,
+    zip: document.getElementById("zip").value,
+    email: document.getElementById("email").value,
+    phone: document.getElementById("phone").value,
+    password: document.getElementById("password").value
+  };
+
+  const data = await apiPOST("/api/editProfile", payload);
+  if (data.success) {
+    alert("Profile updated.");
+    document.getElementById("password").value = "";
+  } else {
+    alert("Update failed.");
+  }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  setupNavbar();
+  loadProfile();
+});
+</script>
+
+</body>
+</html>

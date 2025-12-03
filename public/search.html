@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Search – Hanging Libraries</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="navbar">
+  <button class="nav-btn" onclick="location.href='index.html'">🏛 HOME</button>
+  <button class="nav-btn" onclick="location.href='search.html'">🔍 SEARCH</button>
+  <button class="nav-btn" onclick="location.href='browse.html'">☰ BROWSE</button>
+
+  <button class="nav-btn" id="staffBtn">🛠 STAFF</button>
+  <button class="nav-btn" id="profileBtn">👤 PROFILE</button>
+  <button class="nav-btn" id="loginLogoutBtn">🔐 LOGIN</button>
+</div>
+
+<div class="page-title search-title">SEARCH</div>
+
+<div class="search-box">
+  🔎
+  <input
+    id="searchInput"
+    class="search-input"
+    type="text"
+    placeholder="Search by title, author, or publisher..."
+  >
+</div>
+
+<script src="app.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  setupNavbar();
+  attachSearchHandler("searchInput");
+});
+</script>
+
+</body>
+</html>

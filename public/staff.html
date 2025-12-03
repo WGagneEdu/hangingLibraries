@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Staff Dashboard – Hanging Libraries</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="navbar">
+  <button class="nav-btn" onclick="location.href='index.html'">🏛 HOME</button>
+  <button class="nav-btn" onclick="location.href='search.html'">🔍 SEARCH</button>
+  <button class="nav-btn" onclick="location.href='browse.html'">☰ BROWSE</button>
+
+  <button class="nav-btn" id="loginLogoutBtn">🔐 LOGIN</button>
+</div>
+
+<div class="page-title">STAFF DASHBOARD</div>
+
+<div class="content-card dashboard-menu">
+  <div class="menu-btn" onclick="location.href='staffCatalog.html'">📚 Manage Catalog</div>
+  <div class="menu-btn" onclick="location.href='staffMembers.html'">👥 Manage Member Accounts</div>
+  <div class="menu-btn" onclick="location.href='staffCheckouts.html'">📘 View Checkouts</div>
+  <div class="menu-btn" onclick="location.href='staffWaitlist.html'">🕒 Manage Waitlists</div>
+</div>
+
+<script src="app.js"></script>
+<script>
+staffGuard();
+
+document.addEventListener("DOMContentLoaded", () => {
+  setupNavbar();
+});
+</script>
+
+</body>
+</html>

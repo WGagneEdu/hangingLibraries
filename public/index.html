@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hanging Libraries – Home</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="navbar">
+  <button class="nav-btn" onclick="location.href='index.html'">🏛 HOME</button>
+  <button class="nav-btn" onclick="location.href='search.html'">🔍 SEARCH</button>
+  <button class="nav-btn" onclick="location.href='browse.html'">☰ BROWSE</button>
+
+  <!-- No staff button visible on home -->
+  <button class="nav-btn" id="profileBtn">👤 PROFILE</button>
+  <button class="nav-btn" id="loginLogoutBtn">🔐 LOGIN</button>
+</div>
+
+<div class="home-hero">
+  <h1>HANGING LIBRARIES</h1>
+  <p>
+    Inspired by the Hanging Gardens of Babylon and the Library of Alexandria,
+    Hanging Libraries brings the experience of a physical library into a modern
+    digital platform.
+  </p>
+  <p>
+    Search for books, browse the collection, manage your account, and—if you’re
+    staff—maintain the catalog all from one place.
+  </p>
+</div>
+
+<script src="app.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", setupNavbar);
+</script>
+
+</body>
+</html>

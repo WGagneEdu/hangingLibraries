@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Modify Member – Hanging Libraries</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="navbar">
+  <button class="nav-btn" onclick="location.href='index.html'">🏛 HOME</button>
+  <button class="nav-btn" onclick="location.href='search.html'">🔍 SEARCH</button>
+  <button class="nav-btn" onclick="location.href='browse.html'">☰ BROWSE</button>
+  <button class="nav-btn" onclick="location.href='staff.html'">🛠 STAFF DASHBOARD</button>
+  <button class="nav-btn" id="loginLogoutBtn">🔐 LOGIN</button>
+</div>
+
+<div class="page-title">MODIFY MEMBER</div>
+
+<div class="content-card">
+  <div class="section-title">Search Member</div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label for="searchMemberId">Member ID #</label>
+      <input type="number" id="searchMemberId" placeholder="e.g. 10001">
+    </div>
+    <div class="form-group">
+      <label for="searchLastName">Last Name (optional)</label>
+      <input type="text" id="searchLastName" placeholder="Smith">
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="secondary-btn" onclick="clearMemberForm()">Clear</button>
+    <button class="primary-btn" onclick="lookupMember()">Lookup Member</button>
+  </div>
+
+  <div class="section-title">Member Details</div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label for="memberId">Member ID</label>
+      <input type="number" id="memberId" readonly>
+    </div>
+    <div class="form-group">
+      <label for="firstName">First Name</label>
+      <input type="text" id="firstName">
+    </div>
+    <div class="form-group">
+      <label for="lastName">Last Name</label>
+      <input type="text" id="lastName">
+    </div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label for="dob">Date of Birth</label>
+      <input type="date" id="dob">
+    </div>
+    <div class="form-group">
+      <label for="email">Preferred Email</label>
+      <input type="email" id="email">
+    </div>
+    <div class="form-group">
+      <label for="phone">Preferred Phone</label>
+      <input type="text" id="phone">
+    </div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label for="street">Street Address</label>
+      <input type="text" id="street">
+    </div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label for="city">City</label>
+      <input type="text" id="city">
+    </div>
+    <div class="form-group">
+      <label for="state">State</label>
+      <input type="text" id="state" maxlength="2">
+    </div>
+    <div class="form-group">
+      <label for="zip">Zip Code</label>
+      <input type="number" id="zip">
+    </div>
+  </div>
+
+  <div class="section-title">Account</div>
+  <div class="form-row">
+    <div class="form-group">
+      <label for="password">Reset Password (optional)</label>
+      <input type="password" id="password" placeholder="Leave blank to keep same">
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="primary-btn" onclick="saveMember()">Save Changes</button>
+  </div>
+
+  <div id="memberInfo" class="info-line"></div>
+</div>
+
+<script src="app.js"></script>
+<script>
+staffGuard();
+
+document.addEventListener("DOMContentLoaded", () => {
+  setupNavbar();
+});
+
+function clearMemberForm() {
+  document.querySelectorAll(
+    "#memberId,#firstName,#lastName,#dob,#email,#phone,#street,#city,#state,#zip,#password,#searchMemberId,#searchLastName"
+  ).forEach(i => i.value = "");
+  document.getElementById("memberInfo").textContent = "";
+}
+
+async function lookupMember() {
+  const id = document.getElementById("searchMemberId").value.trim();
+  const ln = document.getElementById("searchLastName").value.trim();
+
+  if (!id && !ln) {
+    alert("Enter at least a Member ID or a Last Name.");
+    return;
+  }
+
+  const params = new URLSearchParams();
+  if (id) params.append("memberId", id);
+  if (ln) params.append("lastName", ln);
+
+  const data = await apiGET("/api/staff/member?" + params.toString());
+  if (!data.success || !data.member) {
+    alert("Member not found.");
+    return;
+  }
+
+  const m = data.member;
+
+  document.getElementById("memberId").value = m.MEMBER_IDNum;
+  document.getElementById("firstName").value = m.First_Name || "";
+  document.getElementById("lastName").value = m.Last_Name || "";
+  document.getElementById("dob").value = m.Date_of_Birth ? m.Date_of_Birth.substring(0,10) : "";
+  document.getElementById("street").value = m.Street_Address || "";
+  document.getElementById("city").value = m.City || "";
+  document.getElementById("state").value = m.State || "";
+  document.getElementById("zip").value = m.Zip_Code || "";
+  document.getElementById("email").value = m.Pref_EMAIL || "";
+  document.getElementById("phone").value = m.Pref_PHONE_NUMBER || "";
+
+  document.getElementById("memberInfo").textContent = data.summary || "";
+}
+
+async function saveMember() {
+  const payload = {
+    memberId: document.getElementById("memberId").value,
+    firstName: document.getElementById("firstName").value.trim(),
+    lastName: document.getElementById("lastName").value.trim(),
+    dob: document.getElementById("dob").value,
+    street: document.getElementById("street").value.trim(),
+    city: document.getElementById("city").value.trim(),
+    state: document.getElementById("state").value.trim(),
+    zip: document.getElementById("zip").value.trim(),
+    email: document.getElementById("email").value.trim(),
+    phone: document.getElementById("phone").value.trim(),
+    password: document.getElementById("password").value
+  };
+
+  if (!payload.memberId) {
+    alert("Load a member first.");
+    return;
+  }
+
+  const data = await apiPOST("/api/staff/member/update", payload);
+  if (data.success) {
+    alert("Member updated.");
+    document.getElementById("password").value = "";
+  } else {
+    alert("Update failed.");
+  }
+}
+</script>
+
+</body>
+</html>

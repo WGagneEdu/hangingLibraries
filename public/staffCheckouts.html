@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Checkouts – Hanging Libraries</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="navbar">
+  <button class="nav-btn" onclick="location.href='index.html'">🏛 HOME</button>
+  <button class="nav-btn" onclick="location.href='search.html'">🔍 SEARCH</button>
+  <button class="nav-btn" onclick="location.href='browse.html'">☰ BROWSE</button>
+  <button class="nav-btn" onclick="location.href='staff.html'">🛠 STAFF DASHBOARD</button>
+  <button class="nav-btn" id="loginLogoutBtn">🔐 LOGIN</button>
+</div>
+
+<div class="page-title">ACTIVE CHECKOUTS</div>
+
+<div class="content-card" id="checkoutList">
+  <p>Loading checkouts...</p>
+</div>
+
+<script src="app.js"></script>
+<script>
+staffGuard();
+
+document.addEventListener("DOMContentLoaded", () => {
+  setupNavbar();
+  loadCheckouts();
+});
+
+async function loadCheckouts() {
+  const container = document.getElementById("checkoutList");
+  const data = await apiGET("/api/staff/checkouts");
+  container.innerHTML = "";
+
+  if (!data.success || !data.items || data.items.length === 0) {
+    container.innerHTML = "<p>No active checkouts.</p>";
+    return;
+  }
+
+  container.innerHTML = data.items.map(renderCheckoutItem).join("");
+
+  // Attach click handlers for return buttons
+  container.querySelectorAll("button[data-logid]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const logId = btn.getAttribute("data-logid");
+      markReturned(logId);
+    });
+  });
+}
+
+async function markReturned(logId) {
+  if (!confirm("Mark this item as returned?")) return;
+
+  const data = await apiPOST("/api/staff/checkout/return", { logId });
+  if (data.success) {
+    loadCheckouts();
+  } else {
+    alert("Failed to mark returned.");
+  }
+}
+</script>
+
+</body>
+</html>

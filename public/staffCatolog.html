@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Manage Catalog – Hanging Libraries</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="navbar">
+  <button class="nav-btn" onclick="location.href='index.html'">🏛 HOME</button>
+  <button class="nav-btn" onclick="location.href='search.html'">🔍 SEARCH</button>
+  <button class="nav-btn" onclick="location.href='browse.html'">☰ BROWSE</button>
+  <button class="nav-btn" onclick="location.href='staff.html'">🛠 STAFF DASHBOARD</button>
+  <button class="nav-btn" id="loginLogoutBtn">🔐 LOGIN</button>
+</div>
+
+<div class="page-title">MANAGE CATALOG</div>
+
+<div class="content-card">
+  <div class="section-title">Find Book by ISBN</div>
+  <div class="form-row">
+    <div class="form-group">
+      <label for="searchIsbn">ISBN</label>
+      <input type="text" id="searchIsbn" placeholder="978-1234567890">
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="secondary-btn" onclick="clearBookForm()">Clear</button>
+    <button class="primary-btn" onclick="loadBook()">Load Book</button>
+  </div>
+
+  <div class="section-title">Book Details (BOOKS)</div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label for="isbn">ISBN (primary key)</label>
+      <input type="text" id="isbn">
+    </div>
+    <div class="form-group">
+      <label for="title">Title</label>
+      <input type="text" id="title">
+    </div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label for="authorFirst">Author First Name</label>
+      <input type="text" id="authorFirst">
+    </div>
+    <div class="form-group">
+      <label for="authorLast">Author Last Name</label>
+      <input type="text" id="authorLast">
+    </div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label for="publisher">Publisher</label>
+      <input type="text" id="publisher">
+    </div>
+    <div class="form-group">
+      <label for="pubDate">Date Published</label>
+      <input type="date" id="pubDate">
+    </div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label for="bookHome">Book Home (branch)</label>
+      <input type="text" id="bookHome">
+    </div>
+    <div class="form-group">
+      <label for="inventory">Inventory Count</label>
+      <input type="number" id="inventory" min="0">
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="primary-btn" onclick="saveBook()">Save / Update Book</button>
+  </div>
+
+  <div id="bookInfo" class="info-line"></div>
+</div>
+
+<script src="app.js"></script>
+<script>
+staffGuard();
+
+document.addEventListener("DOMContentLoaded", () => {
+  setupNavbar();
+});
+
+function clearBookForm() {
+  document.querySelectorAll("#searchIsbn,#isbn,#title,#authorFirst,#authorLast,#publisher,#pubDate,#bookHome,#inventory")
+    .forEach(i => i.value = "");
+  document.getElementById("bookInfo").textContent = "";
+}
+
+async function loadBook() {
+  const searchIsbn = document.getElementById("searchIsbn").value.trim();
+  if (!searchIsbn) {
+    alert("Enter an ISBN to search.");
+    return;
+  }
+
+  const data = await apiGET("/api/staff/book?isbn=" + encodeURIComponent(searchIsbn));
+  if (!data.success || !data.book) {
+    alert("Book not found. You can create it with Save/Update.");
+    document.getElementById("isbn").value = searchIsbn;
+    return;
+  }
+
+  const b = data.book;
+  document.getElementById("isbn").value = b.ISBN || "";
+  document.getElementById("title").value = b.Title || "";
+  document.getElementById("authorFirst").value = b.Author_fName || "";
+  document.getElementById("authorLast").value = b.Author_lName || "";
+  document.getElementById("publisher").value = b.Publisher || "";
+  document.getElementById("pubDate").value = b.Date_Published ? b.Date_Published.substring(0,10) : "";
+  document.getElementById("bookHome").value = b.Book_Home || "";
+  document.getElementById("inventory").value = b.Book_inventory ?? "";
+  document.getElementById("bookInfo").textContent = "Loaded existing book record.";
+}
+
+async function saveBook() {
+  const payload = {
+    isbn: document.getElementById("isbn").value.trim(),
+    title: document.getElementById("title").value.trim(),
+    authorFirst: document.getElementById("authorFirst").value.trim(),
+    authorLast: document.getElementById("authorLast").value.trim(),
+    publisher: document.getElementById("publisher").value.trim(),
+    pubDate: document.getElementById("pubDate").value,
+    bookHome: document.getElementById("bookHome").value.trim(),
+    inventory: document.getElementById("inventory").value
+  };
+
+  if (!payload.isbn || !payload.title) {
+    alert("ISBN and Title are required.");
+    return;
+  }
+
+  const data = await apiPOST("/api/staff/book/save", payload);
+  if (data.success) {
+    alert("Book saved.");
+    document.getElementById("bookInfo").textContent = data.message || "Saved.";
+  } else {
+    alert("Save failed.");
+  }
+}
+</script>
+
+</body>
+</html>
