@@ -1,261 +1,576 @@
+// server.js
 import express from "express";
-import path from "path";
 import mysql from "mysql2";
+import path from "path";
 import { fileURLToPath } from "url";
 
 const app = express();
 
-/* =======================================================
-   BASIC MIDDLEWARE + STATIC FILE HOSTING
-======================================================= */
+// Parse JSON / form bodies
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Resolve directory
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Serve all HTML/CSS/JS/images
-app.use(express.static(__dirname));
+// Serve static files from /public
+app.use(express.static(path.join(__dirname, "public")));
 
-/* =======================================================
+/* =========================================================
    MYSQL CONNECTION
-======================================================= */
-const db = mysql.createConnection({
+   (Uses your GCP MySQL with hanging_libraries DB)
+========================================================= */
+const db = mysql.createPool({
   host: "34.138.215.83",
   user: "nodeUser",
-  password: "M#Kk6U]_/hN2uC|5",            // <-- add your password here if needed
-  database: "hanging_libraries"
+  password: "M#Kk6U]_/hN2uC|5",
+  database: "hanging_libraries", // <-- from your snippet
+  connectionLimit: 10,
 });
 
-db.connect((err) => {
-  if (err) console.log("❌ DB ERROR:", err);
-  else console.log("✔ Connected to MySQL");
-});
-
-/* =======================================================
-   LOGIN (REAL)
-======================================================= */
+/* =========================================================
+   LOGIN: Email OR Member ID + Password
+   Tables: ACCOUNT, STAFF, MEMBER
+========================================================= */
 app.post("/api/login", (req, res) => {
-  const { username, password } = req.body;
+  const { identifier, password } = req.body;
+  if (!identifier || !password) return res.json({ success: false });
 
-  const sql = `
-    SELECT username, role
-    FROM users
-    WHERE username=? AND password=?
+  // If identifier has "@", treat as email; else as MEMBER_IDNum
+  let whereClause;
+  let value;
+  if (identifier.includes("@")) {
+    whereClause = "Pref_EMAIL = ?";
+    value = identifier;
+  } else {
+    whereClause = "MEMBER_IDNum = ?";
+    value = identifier;
+  }
+
+  const sqlAccount = `
+    SELECT *
+    FROM ACCOUNT
+    WHERE ${whereClause}
+    LIMIT 1
   `;
 
-  db.query(sql, [username, password], (err, result) => {
-    if (err) return res.json({ success: false });
+  db.query(sqlAccount, [value], (err, accountRows) => {
+    if (err || accountRows.length === 0) {
+      console.error("Login error or no account:", err);
+      return res.json({ success: false });
+    }
 
-    if (result.length === 0) return res.json({ success: false });
+    const account = accountRows[0];
 
-    return res.json({
-      success: true,
-      role: result[0].role,
-      username: result[0].username
+    // NOTE: Plaintext comparison, because schema appears to store plain text.
+    if (account.Password !== password) {
+      return res.json({ success: false });
+    }
+
+    const memberId = account.MEMBER_IDNum;
+
+    // Check STAFF to see if this is a staff member
+    // Assumes StaffIDNum matches MEMBER_IDNum for staff accounts.
+    const sqlStaff = `
+      SELECT 1
+      FROM STAFF
+      WHERE StaffIDNum = ?
+      LIMIT 1
+    `;
+    db.query(sqlStaff, [memberId], (errStaff, staffRows) => {
+      if (errStaff) {
+        console.error("Staff check error:", errStaff);
+        return res.json({ success: false });
+      }
+
+      if (staffRows.length > 0) {
+        // staff
+        return res.json({
+          success: true,
+          memberId,
+          role: "staff",
+        });
+      }
+
+      // Otherwise treat as member (must exist in MEMBER table)
+      const sqlMember = `
+        SELECT 1
+        FROM MEMBER
+        WHERE MEMBER_IDNum = ?
+        LIMIT 1
+      `;
+      db.query(sqlMember, [memberId], (errMem, memRows) => {
+        if (errMem) {
+          console.error("Member check error:", errMem);
+          return res.json({ success: false });
+        }
+
+        if (memRows.length === 0) {
+          // If no MEMBER row, still return success as member (can adjust if needed)
+          return res.json({ success: true, memberId, role: "member" });
+        }
+
+        return res.json({
+          success: true,
+          memberId,
+          role: "member",
+        });
+      });
     });
   });
 });
 
-/* =======================================================
-   PROTECTED PAGE FALLBACKS
-   (If user tries direct URL, show login.html)
-======================================================= */
-
-// NOTE: These filenames MUST match your actual HTML names
-
-app.get("/editProfilePage.html", (req, res) =>
-  res.sendFile(path.join(__dirname, "loginPage.html"))
-);
-
-app.get("/staffPage.html", (req, res) =>
-  res.sendFile(path.join(__dirname, "loginPage.html"))
-);
-
-app.get("/staffInventoryPage.html", (req, res) =>
-  res.sendFile(path.join(__dirname, "loginPage.html"))
-);
-
-app.get("/staffMemberAccountsPage.html", (req, res) =>
-  res.sendFile(path.join(__dirname, "loginPage.html"))
-);
-
-/* =======================================================
-   HOME PAGE
-======================================================= */
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "homePage.html"));
-});
-
-/* =======================================================
-   SEARCH → REDIRECT TO RESULTS PAGE
-======================================================= */
-app.post("/api/search", (req, res) => {
-  const { query } = req.body;
-  res.redirect(`/resultsPage.html?query=${encodeURIComponent(query)}`);
-});
-
-/* =======================================================
-   REAL BOOK SEARCH (Results Page)
-======================================================= */
-app.get("/api/results", (req, res) => {
-  const q = `%${req.query.query}%`;
+/* =========================================================
+   PROFILE: Load from MEMBER + ACCOUNT
+========================================================= */
+// GET /api/getUserProfile?memberId=123
+app.get("/api/getUserProfile", (req, res) => {
+  const { memberId } = req.query;
+  if (!memberId) return res.json({ success: false });
 
   const sql = `
-    SELECT * FROM books
-    WHERE title LIKE ? OR author LIKE ? OR description LIKE ?
+    SELECT
+      m.*,
+      a.Pref_EMAIL,
+      a.Pref_PHONE_NUMBER
+    FROM MEMBER m
+    LEFT JOIN ACCOUNT a ON m.MEMBER_IDNum = a.MEMBER_IDNum
+    WHERE m.MEMBER_IDNum = ?
+    LIMIT 1
   `;
 
-  db.query(sql, [q, q, q], (err, rows) => {
-    if (err) return res.json({ success: false });
+  db.query(sql, [memberId], (err, rows) => {
+    if (err || rows.length === 0) {
+      console.error("getUserProfile error:", err);
+      return res.json({ success: false });
+    }
 
-    return res.json({ success: true, data: rows });
+    res.json({ success: true, user: rows[0] });
   });
 });
 
-/* =======================================================
-   BROWSE ALL BOOKS
-======================================================= */
-app.get("/api/browse", (req, res) => {
-  db.query("SELECT * FROM books ORDER BY title ASC", (err, rows) => {
-    if (err) return res.json({ success: false });
-
-    return res.json({
-      success: true,
-      items: rows
-    });
-  });
-});
-
-/* =======================================================
-   EDIT PROFILE
-======================================================= */
+// POST /api/editProfile
 app.post("/api/editProfile", (req, res) => {
-  const { username, fullName, email, address, phone, password } = req.body;
+  const {
+    memberId,
+    firstName,
+    lastName,
+    dob,
+    street,
+    city,
+    state,
+    zip,
+    email,
+    phone,
+    password,
+  } = req.body;
 
-  const sql = `
-    UPDATE users SET
-      fullName=?, email=?, address=?, phone=?,
-      password = IF(?='', password, ?)
-    WHERE username=?
+  if (!memberId) return res.json({ success: false });
+
+  const sqlMember = `
+    UPDATE MEMBER
+    SET
+      First_Name = ?,
+      Last_Name = ?,
+      Date_of_Birth = ?,
+      Street_Address = ?,
+      City = ?,
+      State = ?,
+      Zip_Code = ?
+    WHERE MEMBER_IDNum = ?
   `;
 
   db.query(
-    sql,
-    [fullName, email, address, phone, password, password, username],
+    sqlMember,
+    [
+      firstName || "",
+      lastName || "",
+      dob || null,
+      street || "",
+      city || "",
+      state || "",
+      zip || null,
+      memberId,
+    ],
     (err) => {
-      if (err) return res.json({ success: false });
-      return res.json({ success: true });
+      if (err) {
+        console.error("editProfile MEMBER error:", err);
+        return res.json({ success: false });
+      }
+
+      // Insert or update ACCOUNT row
+      const sqlAccount = `
+        INSERT INTO ACCOUNT (MEMBER_IDNum, Pref_EMAIL, Pref_PHONE_NUMBER, Password)
+        VALUES (?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          Pref_EMAIL = VALUES(Pref_EMAIL),
+          Pref_PHONE_NUMBER = VALUES(Pref_PHONE_NUMBER),
+          Password = IF(VALUES(Password)='', ACCOUNT.Password, VALUES(Password))
+      `;
+
+      db.query(
+        sqlAccount,
+        [memberId, email || "", phone || "", password || ""],
+        (err2) => {
+          if (err2) {
+            console.error("editProfile ACCOUNT error:", err2);
+            return res.json({ success: false });
+          }
+          res.json({ success: true });
+        }
+      );
     }
   );
 });
 
-/* =======================================================
-   LOAD PROFILE DATA
-======================================================= */
-app.get("/api/getUserProfile", (req, res) => {
-  const username = req.query.username;
+/* =========================================================
+   SEARCH & BROWSE (BOOKS table)
+========================================================= */
 
-  const sql = `SELECT * FROM users WHERE username=?`;
-
-  db.query(sql, [username], (err, rows) => {
-    if (err || rows.length === 0)
-      return res.json({ success: false });
-
-    return res.json({ success: true, user: rows[0] });
-  });
-});
-
-/* =======================================================
-   STAFF: LOAD MEMBER (username OR membershipID)
-======================================================= */
-app.get("/api/getMember", (req, res) => {
-  const id = req.query.identifier;
+// GET /api/results?query=...
+app.get("/api/results", (req, res) => {
+  const query = req.query.query || "";
+  const q = `%${query}%`;
 
   const sql = `
     SELECT *
-    FROM users
-    WHERE username=? OR membershipID=?
+    FROM BOOKS
+    WHERE Title LIKE ?
+       OR Author_fName LIKE ?
+       OR Author_lName LIKE ?
+       OR Publisher LIKE ?
   `;
 
-  db.query(sql, [id, id], (err, rows) => {
-    if (err || rows.length === 0)
+  db.query(sql, [q, q, q, q], (err, rows) => {
+    if (err) {
+      console.error("results error:", err);
       return res.json({ success: false });
-
-    return res.json({ success: true, member: rows[0] });
+    }
+    res.json({ success: true, data: rows });
   });
 });
 
-/* =======================================================
-   STAFF: UPDATE MEMBER
-======================================================= */
-app.post("/api/updateMember", (req, res) => {
+// GET /api/browse
+app.get("/api/browse", (req, res) => {
+  const sql = `
+    SELECT *
+    FROM BOOKS
+    ORDER BY Title ASC
+  `;
+  db.query(sql, (err, rows) => {
+    if (err) {
+      console.error("browse error:", err);
+      return res.json({ success: false });
+    }
+    res.json({ success: true, items: rows });
+  });
+});
+
+/* =========================================================
+   STAFF: MEMBER MANAGEMENT (MEMBER + ACCOUNT)
+========================================================= */
+
+// GET /api/staff/member?memberId=...&lastName=...
+app.get("/api/staff/member", (req, res) => {
+  const { memberId, lastName } = req.query;
+  let sql = `
+    SELECT
+      m.*,
+      a.Pref_EMAIL,
+      a.Pref_PHONE_NUMBER
+    FROM MEMBER m
+    LEFT JOIN ACCOUNT a ON m.MEMBER_IDNum = a.MEMBER_IDNum
+  `;
+  const params = [];
+
+  if (memberId) {
+    sql += " WHERE m.MEMBER_IDNum = ?";
+    params.push(memberId);
+  } else if (lastName) {
+    sql += " WHERE m.Last_Name = ?";
+    params.push(lastName);
+  } else {
+    return res.json({ success: false });
+  }
+
+  db.query(sql, params, (err, rows) => {
+    if (err || rows.length === 0) {
+      console.error("staff/member lookup error:", err);
+      return res.json({ success: false });
+    }
+
+    const m = rows[0];
+    res.json({
+      success: true,
+      member: m,
+      summary: `Member #${m.MEMBER_IDNum}: ${m.First_Name || ""} ${m.Last_Name || ""}`,
+    });
+  });
+});
+
+// POST /api/staff/member/update
+app.post("/api/staff/member/update", (req, res) => {
   const {
-    identifier, fullName, email, phone,
-    address, status, expiration, role, balance
+    memberId,
+    firstName,
+    lastName,
+    dob,
+    street,
+    city,
+    state,
+    zip,
+    email,
+    phone,
+    password,
   } = req.body;
 
+  if (!memberId) return res.json({ success: false });
+
+  const sqlMember = `
+    UPDATE MEMBER
+    SET
+      First_Name = ?,
+      Last_Name = ?,
+      Date_of_Birth = ?,
+      Street_Address = ?,
+      City = ?,
+      State = ?,
+      Zip_Code = ?
+    WHERE MEMBER_IDNum = ?
+  `;
+
+  db.query(
+    sqlMember,
+    [
+      firstName || "",
+      lastName || "",
+      dob || null,
+      street || "",
+      city || "",
+      state || "",
+      zip || null,
+      memberId,
+    ],
+    (err) => {
+      if (err) {
+        console.error("staff/member UPDATE MEMBER error:", err);
+        return res.json({ success: false });
+      }
+
+      const sqlAccount = `
+        INSERT INTO ACCOUNT (MEMBER_IDNum, Pref_EMAIL, Pref_PHONE_NUMBER, Password)
+        VALUES (?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          Pref_EMAIL = VALUES(Pref_EMAIL),
+          Pref_PHONE_NUMBER = VALUES(Pref_PHONE_NUMBER),
+          Password = IF(VALUES(Password)='', ACCOUNT.Password, VALUES(Password))
+      `;
+
+      db.query(
+        sqlAccount,
+        [memberId, email || "", phone || "", password || ""],
+        (err2) => {
+          if (err2) {
+            console.error("staff/member UPDATE ACCOUNT error:", err2);
+            return res.json({ success: false });
+          }
+          res.json({ success: true });
+        }
+      );
+    }
+  );
+});
+
+/* =========================================================
+   STAFF: BOOK CATALOG (BOOKS)
+========================================================= */
+
+// GET /api/staff/book?isbn=...
+app.get("/api/staff/book", (req, res) => {
+  const { isbn } = req.query;
+  if (!isbn) return res.json({ success: false });
+
+  db.query("SELECT * FROM BOOKS WHERE ISBN = ?", [isbn], (err, rows) => {
+    if (err || rows.length === 0) {
+      console.error("staff/book lookup error:", err);
+      return res.json({ success: false });
+    }
+    res.json({ success: true, book: rows[0] });
+  });
+});
+
+// POST /api/staff/book/save
+app.post("/api/staff/book/save", (req, res) => {
+  const {
+    isbn,
+    title,
+    authorFirst,
+    authorLast,
+    publisher,
+    pubDate,
+    bookHome,
+    inventory,
+  } = req.body;
+
+  if (!isbn || !title) return res.json({ success: false });
+
   const sql = `
-    UPDATE users SET
-      fullName=?, email=?, phone=?, address=?,
-      membershipStatus=?, membershipExpiration=?,
-      role=?, balance=?
-    WHERE username=? OR membershipID=?
+    INSERT INTO BOOKS
+      (ISBN, Author_fName, Author_lName, Publisher, Date_Published, Book_Home, Book_inventory, Title)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE
+      Author_fName = VALUES(Author_fName),
+      Author_lName = VALUES(Author_lName),
+      Publisher = VALUES(Publisher),
+      Date_Published = VALUES(Date_Published),
+      Book_Home = VALUES(Book_Home),
+      Book_inventory = VALUES(Book_inventory),
+      Title = VALUES(Title)
   `;
 
   db.query(
     sql,
     [
-      fullName, email, phone, address,
-      status, expiration, role, balance,
-      identifier, identifier
+      isbn,
+      authorFirst || "",
+      authorLast || "",
+      publisher || "",
+      pubDate || null,
+      bookHome || "",
+      inventory || 0,
+      title,
     ],
     (err) => {
-      if (err) return res.json({ success: false });
-      return res.json({ success: true });
+      if (err) {
+        console.error("staff/book SAVE error:", err);
+        return res.json({ success: false });
+      }
+      res.json({ success: true, message: "Saved" });
     }
   );
 });
 
-/* =======================================================
-   STAFF: LOOKUP BOOK
-======================================================= */
-app.get("/api/getBook", (req, res) => {
-  const { isbn } = req.query;
+/* =========================================================
+   STAFF: CHECKOUTS (LOG + MEMBER + BOOKS)
+========================================================= */
 
-  db.query("SELECT * FROM books WHERE isbn=?", [isbn], (err, rows) => {
-    if (err || rows.length === 0)
-      return res.json({ success: false });
-
-    return res.json({ success: true, book: rows[0] });
-  });
-});
-
-/* =======================================================
-   STAFF: ADD / UPDATE BOOK
-======================================================= */
-app.post("/api/saveBook", (req, res) => {
-  const { title, author, isbn, description, cover } = req.body;
-
+// GET /api/staff/checkouts
+app.get("/api/staff/checkouts", (req, res) => {
   const sql = `
-    INSERT INTO books (title, author, isbn, description, cover)
-    VALUES (?, ?, ?, ?, ?)
-    ON DUPLICATE KEY UPDATE
-      title=VALUES(title),
-      author=VALUES(author),
-      description=VALUES(description),
-      cover=VALUES(cover)
+    SELECT
+      l.*,
+      m.First_Name,
+      m.Last_Name,
+      b.Title
+    FROM LOG l
+    LEFT JOIN MEMBER m ON l.Member_IDNum = m.MEMBER_IDNum
+    LEFT JOIN BOOKS b ON l.Item_Code = b.ISBN
+    ORDER BY l.Due_Date ASC
   `;
 
-  db.query(sql, [title, author, isbn, description, cover], (err) => {
-    if (err) return res.json({ success: false });
-    return res.json({ success: true });
+  db.query(sql, (err, rows) => {
+    if (err) {
+      console.error("staff/checkouts error:", err);
+      return res.json({ success: false });
+    }
+    res.json({ success: true, items: rows });
   });
 });
 
-/* =======================================================
-   START SERVER (PORT 80 FOR GCP)
-======================================================= */
+// POST /api/staff/checkout/return
+app.post("/api/staff/checkout/return", (req, res) => {
+  const { logId } = req.body;
+  if (!logId) return res.json({ success: false });
+
+  db.query("DELETE FROM LOG WHERE Log_ID = ?", [logId], (err) => {
+    if (err) {
+      console.error("staff/checkout/return error:", err);
+      return res.json({ success: false });
+    }
+    res.json({ success: true });
+  });
+});
+
+/* =========================================================
+   STAFF: WAITLIST (HOLD + MEMBER + BOOKS)
+========================================================= */
+
+// GET /api/staff/waitlist?itemCode=...
+app.get("/api/staff/waitlist", (req, res) => {
+  const { itemCode } = req.query;
+  if (!itemCode) return res.json({ success: false });
+
+  const sql = `
+    SELECT
+      h.*,
+      m.First_Name,
+      m.Last_Name,
+      b.Title
+    FROM HOLD h
+    LEFT JOIN MEMBER m ON h.MEMBER_IDNum = m.MEMBER_IDNum
+    LEFT JOIN BOOKS b ON h.Item_Code = b.ISBN
+    WHERE h.Item_Code = ?
+    ORDER BY h.Hold_Num ASC
+  `;
+
+  db.query(sql, [itemCode], (err, rows) => {
+    if (err) {
+      console.error("staff/waitlist error:", err);
+      return res.json({ success: false });
+    }
+
+    res.json({
+      success: true,
+      items: rows,
+      bookTitle: rows[0]?.Title || "",
+    });
+  });
+});
+
+// POST /api/staff/waitlist/add
+app.post("/api/staff/waitlist/add", (req, res) => {
+  const { itemCode, memberId } = req.body;
+  if (!itemCode || !memberId) return res.json({ success: false });
+
+  const sql = `
+    INSERT INTO HOLD (MEMBER_IDNum, Item_Code, Hold_Date, End_Hold_Date)
+    VALUES (?, ?, CURDATE(), NULL)
+  `;
+
+  db.query(sql, [memberId, itemCode], (err) => {
+    if (err) {
+      console.error("staff/waitlist/add error:", err);
+      return res.json({ success: false });
+    }
+    res.json({ success: true });
+  });
+});
+
+// POST /api/staff/waitlist/remove
+app.post("/api/staff/waitlist/remove", (req, res) => {
+  const { holdNum } = req.body;
+  if (!holdNum) return res.json({ success: false });
+
+  db.query("DELETE FROM HOLD WHERE Hold_Num = ?", [holdNum], (err) => {
+    if (err) {
+      console.error("staff/waitlist/remove error:", err);
+      return res.json({ success: false });
+    }
+    res.json({ success: true });
+  });
+});
+
+/* =========================================================
+   ROOT: Serve home page
+========================================================= */
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+/* =========================================================
+   START SERVER
+========================================================= */
 app.listen(80, () => {
-  console.log("✔ Server running on port 80 (GCP VM)");
+  console.log("✔ Server running on port 80");
 });
