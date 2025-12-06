@@ -3,6 +3,7 @@ import express from "express";
 import mysql from "mysql2";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
 const app = express();
 
@@ -26,6 +27,11 @@ const db = mysql.createPool({
   user: "nodeUser",
   password: "M#Kk6U]_/hN2uC|5",
   database: "hanging_libraries", // <-- from your snippet
+  ssl: {
+	  ca: fs.readFileSync('./genericUserCert/server-ca.pem'),
+	  key: fs.readFileSync('./genericUserCert/client-key.pem'),
+	  cert: fs.readFileSync('./genericUserCert/client-cert.pem')
+  },
   connectionLimit: 10,
 });
 
