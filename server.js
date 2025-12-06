@@ -20,13 +20,13 @@ app.use(express.static(path.join(__dirname, "public")));
 
 /* =========================================================
    MYSQL CONNECTION
-   (Uses your GCP MySQL with hanging_libraries DB)
+   (Uses your GCP MySQL with hangingLibraries DB)
 ========================================================= */
 const db = mysql.createPool({
   host: "34.138.215.83",
   user: "nodeUser",
   password: "M#Kk6U]_/hN2uC|5",
-  database: "hanging_libraries", // <-- from your snippet
+  database: "hangingLibraries", // <-- from your snippet
   ssl: {
 	  ca: fs.readFileSync('./genericUserCert/server-ca.pem'),
 	  key: fs.readFileSync('./genericUserCert/client-key.pem'),
