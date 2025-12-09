@@ -102,7 +102,7 @@ const inventory    = document.getElementById("inventory");
 const cover        = document.getElementById("cover");
 const preview      = document.getElementById("coverPreview");
 
-/* ===== Load Book By ISBN ===== */
+//Load Book By ISBN
 async function loadBook() {
   const isbnVal = searchISBN.value.trim();
   if (!isbnVal) return;
@@ -136,7 +136,7 @@ async function loadBook() {
   }
 }
 
-/* ===== Save Book ===== */
+//Save Book
 async function saveBook() {
   const fd = new FormData();
 
@@ -162,7 +162,7 @@ async function saveBook() {
   alert(data.success ? "Book saved" : "Save failed");
 }
 
-/* ===== Image Preview ===== */
+//Image Preview
 cover.addEventListener("change", () => {
   if (cover.files.length === 0) return;
   preview.src = URL.createObjectURL(cover.files[0]);
