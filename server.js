@@ -174,60 +174,50 @@ app.post("/api/editProfile", (req, res) => {
 
   if (!memberId) return res.json({ success: false });
 
-  const sqlMember = `
-    UPDATE MEMBER
-    SET
-      First_Name = ?,
-      Last_Name = ?,
-      Date_of_Birth = ?,
-      Street_Address = ?,
-      City = ?,
-      State = ?,
-      Zip_Code = ?
-    WHERE MEMBER_IDNum = ?
-  `;
+  // Update ACCOUNT row first
+const sqlUpdateAccount = `
+  UPDATE ACCOUNT
+  SET
+    Pref_EMAIL = ?,
+    Pref_PHONE_NUMBER = ?,
+    Password = IF(? = '', Password, ?)
+  WHERE MEMBER_IDNum = ?
+`;
 
-  db.query(
-    sqlMember,
-    [
-      firstName || "",
-      lastName || "",
-      dob || null,
-      street || "",
-      city || "",
-      state || "",
-      zip || null,
-      memberId,
-    ],
-    (err) => {
-      if (err) {
-        console.error("editProfile MEMBER error:", err);
-        return res.json({ success: false });
-      }
+db.query(
+  sqlUpdateAccount,
+  [email || "", phone || "", password || "", password || "", memberId],
+  (err2, result) => {
+    if (err2) {
+      console.error("editProfile ACCOUNT UPDATE error:", err2);
+      return res.json({ success: false });
+    }
 
-      // Insert or update ACCOUNT row
-      const sqlAccount = `
-        INSERT INTO ACCOUNT (MEMBER_IDNum, Pref_EMAIL, Pref_PHONE_NUMBER, Password)
+    // If no ACCOUNT row existed, insert one
+    if (result.affectedRows === 0) {
+      const sqlInsertAccount = `
+        INSERT INTO ACCOUNT
+          (MEMBER_IDNum, Pref_EMAIL, Pref_PHONE_NUMBER, Password)
         VALUES (?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE
-          Pref_EMAIL = VALUES(Pref_EMAIL),
-          Pref_PHONE_NUMBER = VALUES(Pref_PHONE_NUMBER),
-          Password = IF(VALUES(Password)='', ACCOUNT.Password, VALUES(Password))
       `;
 
       db.query(
-        sqlAccount,
+        sqlInsertAccount,
         [memberId, email || "", phone || "", password || ""],
-        (err2) => {
-          if (err2) {
-            console.error("editProfile ACCOUNT error:", err2);
+        (err3) => {
+          if (err3) {
+            console.error("editProfile ACCOUNT INSERT error:", err3);
             return res.json({ success: false });
           }
-          res.json({ success: true });
+          return res.json({ success: true });
         }
       );
+    } else {
+      return res.json({ success: true });
     }
-  );
+  }
+);
+
 });
 
 /* =========================================================
@@ -580,3 +570,4 @@ app.get("/", (req, res) => {
 app.listen(80, () => {
   console.log("✔ Server running on port 80");
 });
+
