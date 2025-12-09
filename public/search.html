@@ -34,7 +34,21 @@
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   setupNavbar();
-  attachSearchHandler("searchInput");
+
+  const input = document.getElementById("searchInput");
+
+  function doSearch() {
+    const query = input.value.trim();
+    if (!query) return;
+    window.location.href =
+      "results.html?query=" + encodeURIComponent(query);
+  }
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      doSearch();
+    }
+  });
 });
 </script>
 

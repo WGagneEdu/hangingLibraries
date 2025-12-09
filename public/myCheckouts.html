@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>My Checkouts</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="navbar">
+  <button class="nav-btn" onclick="location.href='index.html'">🏛 HOME</button>
+  <button class="nav-btn" onclick="location.href='browse.html'">☰ BROWSE</button>
+  <button class="nav-btn" id="profileBtn">👤 PROFILE</button>
+  <button class="nav-btn" id="loginLogoutBtn">🔐 LOGIN</button>
+</div>
+
+<div class="page-title">MY CHECKED OUT BOOKS</div>
+
+<div class="content-card" id="myCheckouts">
+  <p>Loading your checkouts...</p>
+</div>
+
+<script src="app.js"></script>
+<script>
+if (!isLoggedIn()) {
+  alert("Please log in first.");
+  window.location.href = "login.html";
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  setupNavbar();
+
+  const { memberId } = getSession();
+  const container = document.getElementById("myCheckouts");
+
+  const data = await apiGET("/api/my/checkouts?memberId=" + encodeURIComponent(memberId));
+  container.innerHTML = "";
+
+  if (!data.success || data.items.length === 0) {
+    container.innerHTML = "<p>You have no active checkouts.</p>";
+    return;
+  }
+
+  container.innerHTML = data.items.map(item => `
+    <div class="checkout-item">
+      <div>
+        <div class="book-title">${item.Title}</div>
+        <div class="meta">
+          ISBN: ${item.ISBN}<br>
+          Checked Out: ${item.Checkout_Date}<br>
+          Due: <strong>${item.Due_Date}</strong>
+        </div>
+      </div>
+    </div>
+  `).join("");
+});
+</script>
+
+</body>
+</html>

@@ -65,7 +65,7 @@ function setupNavbar() {
 }
 
 /* ============================================================
-   STAFF GUARD (protect staff pages)
+   STAFF GUARD
 ============================================================ */
 function staffGuard() {
   const { memberId, role } = getSession();
@@ -82,8 +82,7 @@ async function apiGET(url) {
   try {
     const res = await fetch(url);
     return await res.json();
-  } catch (e) {
-    console.error("GET error:", e);
+  } catch {
     return { success: false };
   }
 }
@@ -96,8 +95,7 @@ async function apiPOST(url, body) {
       body: JSON.stringify(body),
     });
     return await res.json();
-  } catch (e) {
-    console.error("POST error:", e);
+  } catch {
     return { success: false };
   }
 }
@@ -106,22 +104,7 @@ async function apiPOST(url, body) {
    URL & SEARCH HELPERS
 ============================================================ */
 function getQueryParam(param) {
-  const url = new URL(window.location.href);
-  return url.searchParams.get(param);
-}
-
-function attachSearchHandler(inputId) {
-  const input = document.getElementById(inputId);
-  if (!input) return;
-
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      const query = input.value.trim();
-      if (!query) return;
-      window.location.href =
-        "results.html?query=" + encodeURIComponent(query);
-    }
-  });
+  return new URL(window.location.href).searchParams.get(param);
 }
 
 /* ============================================================
@@ -131,69 +114,80 @@ function renderBookCard(book) {
   return `
     <div class="book-card">
       <div class="book-title">${book.Title || "(Untitled)"}</div>
-      <div class="book-author">${book.Author_fName || ""} ${
-    book.Author_lName || ""
-  }</div>
+      <div class="book-author">${book.Author_fName || ""} ${book.Author_lName || ""}</div>
       <div class="book-meta">
-        ISBN: ${book.ISBN || "N/A"}<br>
-        Home: ${book.Book_Home || "N/A"} • Copies: ${
-    book.Book_inventory ?? "N/A"
-  }
+        ISBN: ${book.ISBN}<br>
+        Home: ${book.Book_Home || "N/A"} • Copies: ${book.Book_inventory}
       </div>
-    </div>
-  `;
-}
-
-function renderCheckoutItem(item) {
-  return `
-    <div class="checkout-item">
-      <div>
-        <div class="book-title">${item.Title || "(Unknown Title)"} (${
-    item.Item_Code
-  })</div>
-        <div class="meta">
-          Member: #${item.Member_IDNum} – ${item.First_Name || ""} ${
-    item.Last_Name || ""
-  }<br>
-          Checked Out: ${item.Checkout_Date || "N/A"} |
-          Due: ${item.Due_Date || "N/A"}
-        </div>
-      </div>
-      <button class="btn-small" data-logid="${item.Log_ID}">Mark Returned</button>
-    </div>
-  `;
-}
-
-function renderWaitlistEntry(entry) {
-  return `
-    <div class="waitlist-entry">
-      <span>#${entry.Hold_Num} – Member #${entry.MEMBER_IDNum} (${
-    entry.First_Name || ""
-  } ${entry.Last_Name || ""})</span>
-      <span>
-        From ${entry.Hold_Date || "N/A"} to ${
-    entry.End_Hold_Date || "N/A"
-  }
-        <button class="btn-small" data-holdnum="${entry.Hold_Num}">Remove</button>
-      </span>
     </div>
   `;
 }
 
 /* ============================================================
-   EXPOSE GLOBALS
-   (so you can call these from inline scripts)
+   BOOK MODAL + CHECKOUT
 ============================================================ */
-window.getSession = getSession;
-window.isLoggedIn = isLoggedIn;
-window.isStaff = isStaff;
-window.logout = logout;
+function enableBookClick(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.querySelectorAll(".book-card").forEach(card => {
+    card.style.cursor = "pointer";
+    card.onclick = () => {
+      const title = card.querySelector(".book-title").textContent;
+      const author = card.querySelector(".book-author").textContent;
+      const meta = card.querySelector(".book-meta").innerHTML;
+
+      const isbn = meta.match(/ISBN:\s*([^<]+)/)[1];
+      const inventory = meta.match(/Copies:\s*([^<]+)/)[1];
+
+      openBookModal({ title, author, isbn, inventory });
+    };
+  });
+}
+
+function openBookModal(book) {
+  document.getElementById("modalTitle").textContent = book.title;
+  document.getElementById("modalAuthor").textContent = book.author;
+  document.getElementById("modalISBN").textContent = "ISBN: " + book.isbn;
+  document.getElementById("modalInventory").textContent =
+    "Copies available: " + book.inventory;
+
+  document.getElementById("checkoutBtn").onclick = async () => {
+    if (!isLoggedIn()) {
+      alert("You must log in first.");
+      window.location.href = "login.html";
+      return;
+    }
+
+    const { memberId } = getSession();
+    const res = await apiPOST("/api/staff/checkout", { memberId, isbn: book.isbn });
+
+    if (res.success) {
+      alert("Book checked out successfully.");
+      closeBookModal();
+
+      // ✅ refresh inventory
+      if (window.refreshBooks) window.refreshBooks();
+    } else {
+      alert(res.message || "Checkout failed.");
+    }
+  };
+
+  document.getElementById("bookModal").classList.remove("hidden");
+}
+
+function closeBookModal() {
+  document.getElementById("bookModal").classList.add("hidden");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const closeBtn = document.getElementById("closeModalBtn");
+  if (closeBtn) closeBtn.onclick = closeBookModal;
+});
+
+/* ============================================================
+   EXPOSE GLOBALS
+============================================================ */
 window.setupNavbar = setupNavbar;
-window.staffGuard = staffGuard;
 window.apiGET = apiGET;
-window.apiPOST = apiPOST;
-window.getQueryParam = getQueryParam;
-window.attachSearchHandler = attachSearchHandler;
-window.renderBookCard = renderBookCard;
-window.renderCheckoutItem = renderCheckoutItem;
-window.renderWaitlistEntry = renderWaitlistEntry;
+window.enableBookClick = enableBookClick;
