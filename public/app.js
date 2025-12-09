@@ -160,13 +160,14 @@ function openBookModal(book) {
     }
 
     const { memberId } = getSession();
-    const res = await apiPOST("/api/staff/checkout", { memberId, isbn: book.isbn });
+    const res = await apiPOST("/api/staff/checkout", {
+      memberId,
+      isbn: book.isbn
+    });
 
     if (res.success) {
       alert("Book checked out successfully.");
       closeBookModal();
-
-      // ✅ refresh inventory
       if (window.refreshBooks) window.refreshBooks();
     } else {
       alert(res.message || "Checkout failed.");
@@ -186,8 +187,13 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /* ============================================================
-   EXPOSE GLOBALS
+   EXPOSE GLOBALS (✅ REQUIRED ADDITIONS)
 ============================================================ */
 window.setupNavbar = setupNavbar;
 window.apiGET = apiGET;
+window.apiPOST = apiPOST;
 window.enableBookClick = enableBookClick;
+window.staffGuard = staffGuard;
+window.renderBookCard = renderBookCard;
+window.isLoggedIn = isLoggedIn;
+window.closeBookModal = closeBookModal;

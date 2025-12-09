@@ -13,7 +13,16 @@
   <button class="nav-btn" onclick="location.href='search.html'">🔍 SEARCH</button>
   <button class="nav-btn" onclick="location.href='browse.html'">☰ BROWSE</button>
 
-  <!-- No staff button visible on home -->
+  <!-- ✅ STAFF BUTTON (HIDDEN BY DEFAULT) -->
+  <button
+    class="nav-btn"
+    id="staffBtn"
+    style="display:none;"
+    onclick="location.href='staff.html'"
+  >
+    🛠 STAFF
+  </button>
+
   <button class="nav-btn" id="profileBtn">👤 PROFILE</button>
   <button class="nav-btn" id="loginLogoutBtn">🔐 LOGIN</button>
 </div>
@@ -33,7 +42,15 @@
 
 <script src="app.js"></script>
 <script>
-  document.addEventListener("DOMContentLoaded", setupNavbar);
+  document.addEventListener("DOMContentLoaded", () => {
+    setupNavbar();
+
+    // ✅ STAFF-ONLY VISIBILITY
+    const role = localStorage.getItem("role");
+    if (role === "staff") {
+      document.getElementById("staffBtn").style.display = "inline-flex";
+    }
+  });
 </script>
 
 </body>

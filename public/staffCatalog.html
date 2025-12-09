@@ -4,10 +4,13 @@
   <meta charset="UTF-8">
   <title>Manage Catalog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="styles.css">
+
+  <!-- ✅ CORRECT CSS PATH -->
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
 
+<!-- NAVBAR -->
 <div class="navbar">
   <button class="nav-btn" onclick="location.href='index.html'">🏛 HOME</button>
   <button class="nav-btn" onclick="location.href='staff.html'">🛠 STAFF</button>
@@ -16,9 +19,10 @@
 <div class="page-title">MANAGE CATALOG</div>
 
 <div class="content-card">
+
   <!-- ISBN SEARCH -->
   <div class="form-group">
-    <label>Search ISBN</label>
+    <label for="searchISBN">Search ISBN</label>
     <input id="searchISBN" type="text">
     <button class="primary-btn" onclick="loadBook()">Load</button>
   </div>
@@ -27,50 +31,50 @@
 
   <!-- BOOK INFO -->
   <div class="form-group">
-    <label>ISBN</label>
+    <label for="isbn">ISBN</label>
     <input id="isbn">
   </div>
 
   <div class="form-group">
-    <label>Title</label>
+    <label for="title">Title</label>
     <input id="title">
   </div>
 
   <div class="form-row">
     <div class="form-group">
-      <label>Author First</label>
+      <label for="authorFirst">Author First</label>
       <input id="authorFirst">
     </div>
+
     <div class="form-group">
-      <label>Author Last</label>
+      <label for="authorLast">Author Last</label>
       <input id="authorLast">
     </div>
   </div>
 
   <div class="form-group">
-    <label>Publisher</label>
+    <label for="publisher">Publisher</label>
     <input id="publisher">
   </div>
 
   <div class="form-group">
-    <label>Date Published</label>
+    <label for="pubDate">Date Published</label>
     <input id="pubDate" type="date">
   </div>
 
   <div class="form-group">
-    <label>Book Home</label>
+    <label for="bookHome">Book Home</label>
     <input id="bookHome">
   </div>
 
   <div class="form-group">
-    <label>Inventory</label>
+    <label for="inventory">Inventory</label>
     <input id="inventory" type="number">
   </div>
 
-  <!-- ✅ COVER IMAGE -->
+  <!-- COVER IMAGE -->
   <div class="form-group">
     <label>Cover Image</label>
-
     <div style="text-align:center; margin-bottom:10px;">
       <img
         id="coverPreview"
@@ -79,46 +83,63 @@
         style="max-width:160px; max-height:220px; border-radius:6px; border:1px solid #ccc;"
       >
     </div>
-
     <input id="cover" type="file" accept="image/*">
   </div>
 
   <button class="primary-btn" onclick="saveBook()">Save Book</button>
+
 </div>
 
+<!-- ✅ SCRIPT AT BOTTOM SO DOM IS READY -->
 <script>
-const preview = document.getElementById("coverPreview");
+/* ===== ELEMENT BINDINGS ===== */
+const searchISBN   = document.getElementById("searchISBN");
+const isbn         = document.getElementById("isbn");
+const title        = document.getElementById("title");
+const authorFirst  = document.getElementById("authorFirst");
+const authorLast   = document.getElementById("authorLast");
+const publisher    = document.getElementById("publisher");
+const pubDate      = document.getElementById("pubDate");
+const bookHome     = document.getElementById("bookHome");
+const inventory    = document.getElementById("inventory");
+const cover        = document.getElementById("cover");
+const preview      = document.getElementById("coverPreview");
 
-/* ================= LOAD BOOK BY ISBN ================= */
+/* ===== LOAD BOOK BY ISBN ===== */
 async function loadBook() {
   const isbnVal = searchISBN.value.trim();
   if (!isbnVal) return;
 
-  const res = await fetch(`/api/staff/book?isbn=${encodeURIComponent(isbnVal)}`);
-  const data = await res.json();
+  try {
+    const res = await fetch(`/api/staff/book/${encodeURIComponent(isbnVal)}`);
+    const data = await res.json();
 
-  if (!data.success || !data.book) {
-    alert("Book not found");
-    preview.src = "/images/noimg.jpeg";
-    return;
+    if (!data.success) {
+      alert("Book not found");
+      preview.src = "/images/noimg.jpeg";
+      return;
+    }
+
+    const b = data.book;
+
+    isbn.value = b.ISBN;
+    title.value = b.Title;
+    authorFirst.value = b.Author_fName;
+    authorLast.value = b.Author_lName;
+    publisher.value = b.Publisher || "";
+    pubDate.value = b.Date_Published
+      ? b.Date_Published.substring(0, 10)
+      : "";
+    bookHome.value = b.Book_Home;
+    inventory.value = b.Book_inventory;
+
+    preview.src = `/api/book/cover/${b.ISBN}`;
+  } catch (err) {
+    alert("Error loading book");
   }
-
-  const b = data.book;
-
-  isbn.value = b.ISBN;
-  title.value = b.Title;
-  authorFirst.value = b.Author_fName;
-  authorLast.value = b.Author_lName;
-  publisher.value = b.Publisher || "";
-  pubDate.value = b.Date_Published ? b.Date_Published.substring(0,10) : "";
-  bookHome.value = b.Book_Home;
-  inventory.value = b.Book_inventory;
-
-  // ✅ Load cover or fallback
-  preview.src = b.coverImage ? `/api/book/cover/${b.ISBN}` : "/images/noimg.jpeg";
 }
 
-/* ================= SAVE BOOK ================= */
+/* ===== SAVE BOOK ===== */
 async function saveBook() {
   const fd = new FormData();
 
@@ -131,7 +152,6 @@ async function saveBook() {
   fd.append("bookHome", bookHome.value.trim());
   fd.append("inventory", inventory.value);
 
-  // ✅ If no file selected, default image is used automatically
   if (cover.files.length > 0) {
     fd.append("cover", cover.files[0]);
   }
@@ -145,7 +165,7 @@ async function saveBook() {
   alert(data.success ? "Book saved" : "Save failed");
 }
 
-/* ================= PREVIEW IMAGE ON SELECT ================= */
+/* ===== IMAGE PREVIEW ===== */
 cover.addEventListener("change", () => {
   if (cover.files.length === 0) return;
   preview.src = URL.createObjectURL(cover.files[0]);

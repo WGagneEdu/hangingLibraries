@@ -4,7 +4,6 @@ import mysql from "mysql2";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
-import multer from "multer";
 
 const app = express();
 
@@ -34,25 +33,6 @@ const db = mysql.createPool({
 });
 
 /* =====================================================
-   IMAGE UPLOAD (multer)
-===================================================== */
-const upload = multer({
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
-  fileFilter: (req, file, cb) => {
-    if (!file.mimetype.startsWith("image/")) {
-      return cb(new Error("Only image files allowed"));
-    }
-    cb(null, true);
-  },
-});
-
-function loadDefaultImage() {
-  return fs.readFileSync(
-    path.join(__dirname, "public/images/noimg.jpeg")
-  );
-}
-
-/* =====================================================
    AUTH / LOGIN
 ===================================================== */
 app.post("/api/login", (req, res) => {
@@ -63,34 +43,38 @@ app.post("/api/login", (req, res) => {
     ? "Pref_EMAIL = ?"
     : "MEMBER_IDNum = ?";
 
-  db.query(
-    `SELECT * FROM ACCOUNT WHERE ${whereClause} LIMIT 1`,
-    [identifier],
-    (err, rows) => {
-      if (err || rows.length === 0) return res.json({ success: false });
+  const sql = `
+    SELECT *
+    FROM ACCOUNT
+    WHERE ${whereClause}
+    LIMIT 1
+  `;
 
-      const acct = rows[0];
-      if (acct.Password !== password) return res.json({ success: false });
+  db.query(sql, [identifier], (err, rows) => {
+    if (err || rows.length === 0) return res.json({ success: false });
 
-      const memberId = acct.MEMBER_IDNum;
+    const acct = rows[0];
+    if (acct.Password !== password) return res.json({ success: false });
 
-      const staffCheck = `
-        SELECT 1 FROM ADMINS WHERE AdminIDNum = ?
-        UNION
-        SELECT 1 FROM STAFF WHERE StaffIDNum = ?
-        LIMIT 1
-      `;
+    const memberId = acct.MEMBER_IDNum;
 
-      db.query(staffCheck, [memberId, memberId], (err2, staffRows) => {
-        if (err2) return res.json({ success: false });
-        res.json({
-          success: true,
-          memberId,
-          role: staffRows.length ? "staff" : "member",
-        });
+    const staffCheck = `
+      SELECT 1 FROM ADMINS WHERE AdminIDNum = ?
+      UNION
+      SELECT 1 FROM STAFF WHERE StaffIDNum = ?
+      LIMIT 1
+    `;
+
+    db.query(staffCheck, [memberId, memberId], (err2, staffRows) => {
+      if (err2) return res.json({ success: false });
+
+      res.json({
+        success: true,
+        memberId,
+        role: staffRows.length ? "staff" : "member",
       });
-    }
-  );
+    });
+  });
 });
 
 /* =====================================================
@@ -100,48 +84,58 @@ app.get("/api/getUserProfile", (req, res) => {
   const { memberId } = req.query;
   if (!memberId) return res.json({ success: false });
 
-  db.query(
-    `
+  const sql = `
     SELECT m.*, a.Pref_EMAIL, a.Pref_PHONE_NUMBER
     FROM MEMBER m
     LEFT JOIN ACCOUNT a ON m.MEMBER_IDNum = a.MEMBER_IDNum
     WHERE m.MEMBER_IDNum = ?
     LIMIT 1
-  `,
-    [memberId],
-    (err, rows) => {
-      if (err || rows.length === 0) return res.json({ success: false });
-      res.json({ success: true, user: rows[0] });
-    }
-  );
+  `;
+
+  db.query(sql, [memberId], (err, rows) => {
+    if (err || rows.length === 0) return res.json({ success: false });
+    res.json({ success: true, user: rows[0] });
+  });
 });
 
 app.post("/api/editProfile", (req, res) => {
   const {
-    memberId, firstName, lastName, dob,
-    street, city, state, zip,
-    email, phone, password
+    memberId,
+    firstName,
+    lastName,
+    dob,
+    street,
+    city,
+    state,
+    zip,
+    email,
+    phone,
+    password,
   } = req.body;
 
-  db.query(
-    `
+  const updateMember = `
     UPDATE MEMBER
     SET First_Name=?, Last_Name=?, Date_of_Birth=?,
         Street_Address=?, City=?, State=?, Zip_Code=?
     WHERE MEMBER_IDNum=?
-  `,
+  `;
+
+  db.query(
+    updateMember,
     [firstName, lastName, dob, street, city, state, zip, memberId],
     () => {
-      db.query(
-        `
+      const updateAcct = `
         UPDATE ACCOUNT
         SET Pref_EMAIL=?, Pref_PHONE_NUMBER=?,
             Password=IF(?='', Password, ?)
         WHERE MEMBER_IDNum=?
-      `,
+      `;
+
+      db.query(
+        updateAcct,
         [email, phone, password, password, memberId],
         (err, result) => {
-          if (result.affectedRows === 0) {
+          if (result && result.affectedRows === 0) {
             db.query(
               `
               INSERT INTO ACCOUNT
@@ -159,89 +153,57 @@ app.post("/api/editProfile", (req, res) => {
 });
 
 /* =====================================================
+   IMAGE API
+===================================================== */
+app.get("/api/book/cover/:isbn", (req, res) => {
+  const fallbackPath = path.join(__dirname, "public", "images", "noimg.jpg");
+
+  db.query(
+    `SELECT coverImage, imageMime FROM BOOKS WHERE ISBN = ?`,
+    [req.params.isbn],
+    (err, rows) => {
+      if (err || !rows.length || !rows[0].coverImage) {
+        return res.sendFile(fallbackPath);
+      }
+
+      res.set("Content-Type", `image/${rows[0].imageMime || "jpeg"}`);
+      res.send(rows[0].coverImage);
+    }
+  );
+});
+
+/* =====================================================
    BROWSE & SEARCH
 ===================================================== */
-app.get("/api/browse", (req, res) => {
+app.get("/api/browse", (_, res) => {
   db.query(
-    `SELECT ISBN, Title, Author_fName, Author_lName,
-            Book_Home, Book_inventory FROM BOOKS ORDER BY Title`,
-    (_, rows) => res.json({ success: true, items: rows })
+    `
+    SELECT ISBN, Title, Author_fName, Author_lName,
+           Book_Home, Book_inventory
+    FROM BOOKS
+    ORDER BY Title
+    `,
+    (err, rows) => {
+      if (err) return res.json({ success: false });
+      res.json({ success: true, items: rows });
+    }
   );
 });
 
 app.get("/api/results", (req, res) => {
   const q = `%${req.query.query}%`;
+
   db.query(
     `
     SELECT ISBN, Title, Author_fName, Author_lName,
            Book_Home, Book_inventory
     FROM BOOKS
     WHERE Title LIKE ? OR Author_fName LIKE ? OR Author_lName LIKE ?
-  `,
+    `,
     [q, q, q],
-    (_, rows) => res.json({ success: true, data: rows })
-  );
-});
-
-/* =====================================================
-   STAFF: BOOK LOOKUP & SAVE (✅ NEW)
-===================================================== */
-app.get("/api/staff/book", (req, res) => {
-  db.query(
-    `SELECT * FROM BOOKS WHERE ISBN = ? LIMIT 1`,
-    [req.query.isbn],
-    (_, rows) =>
-      res.json({ success: true, book: rows[0] || null })
-  );
-});
-
-app.post("/api/staff/book/save", upload.single("cover"), (req, res) => {
-  const {
-    isbn, title, authorFirst, authorLast,
-    publisher, pubDate, bookHome, inventory
-  } = req.body;
-
-  const imageBuffer = req.file ? req.file.buffer : null;
-  const imageMime = req.file ? req.file.mimetype.split("/")[1] : null;
-
-  db.query(
-    `
-    INSERT INTO BOOKS
-      (ISBN, Title, Author_fName, Author_lName, Publisher,
-       Date_Published, Book_Home, Book_inventory,
-       coverImage, imageMime)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ON DUPLICATE KEY UPDATE
-      Title=VALUES(Title),
-      Author_fName=VALUES(Author_fName),
-      Author_lName=VALUES(Author_lName),
-      Publisher=VALUES(Publisher),
-      Date_Published=VALUES(Date_Published),
-      Book_Home=VALUES(Book_Home),
-      Book_inventory=VALUES(Book_inventory),
-      coverImage=IFNULL(VALUES(coverImage), coverImage),
-      imageMime=IFNULL(VALUES(imageMime), imageMime)
-  `,
-    [
-      isbn, title, authorFirst, authorLast,
-      publisher, pubDate || null, bookHome,
-      inventory || 0, imageBuffer, imageMime
-    ],
-    () => res.json({ success: true })
-  );
-});
-
-app.get("/api/book/cover/:isbn", (req, res) => {
-  db.query(
-    `SELECT coverImage, imageMime FROM BOOKS WHERE ISBN = ?`,
-    [req.params.isbn],
-    (_, rows) => {
-      if (!rows[0]?.coverImage) {
-        res.set("Content-Type", "image/jpeg");
-        return res.send(loadDefaultImage());
-      }
-      res.set("Content-Type", `image/${rows[0].imageMime}`);
-      res.send(rows[0].coverImage);
+    (err, rows) => {
+      if (err) return res.json({ success: false });
+      res.json({ success: true, data: rows });
     }
   );
 });
@@ -256,7 +218,7 @@ app.post("/api/staff/checkout", (req, res) => {
     `SELECT Book_inventory FROM BOOKS WHERE ISBN=?`,
     [isbn],
     (_, rows) => {
-      if (rows[0].Book_inventory <= 0)
+      if (!rows || rows[0].Book_inventory <= 0)
         return res.json({ success: false });
 
       db.query(
@@ -264,7 +226,7 @@ app.post("/api/staff/checkout", (req, res) => {
         INSERT INTO LOG
         (Member_IDNum, Item_Code, Checkout_Date, Due_Date)
         VALUES (?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 14 DAY))
-      `,
+        `,
         [memberId, isbn],
         () => {
           db.query(
@@ -278,6 +240,72 @@ app.post("/api/staff/checkout", (req, res) => {
   );
 });
 
+/* =====================================================
+   STAFF CHECKOUTS (OLD — RENAMED ONLY)
+===================================================== */
+app.get("/api/staff/checkouts_old", (_, res) => {
+  db.query(
+    `
+    SELECT l.Log_ID, l.Member_IDNum, b.Title,
+           l.Checkout_Date, l.Due_Date
+    FROM LOG l
+    JOIN BOOKS b ON l.Item_Code = b.ISBN
+    `,
+    (_, rows) => res.json({ success: true, items: rows })
+  );
+});
+
+/* =====================================================
+   STAFF CHECKOUTS (ACTIVE — WITH MEMBER NAMES)
+===================================================== */
+app.get("/api/staff/checkouts", (req, res) => {
+  const sql = `
+    SELECT
+      l.Log_ID,
+      l.Member_IDNum,
+      m.First_Name,
+      m.Last_Name,
+      l.Item_Code AS ISBN,
+      b.Title,
+      l.Checkout_Date,
+      l.Due_Date
+    FROM LOG l
+    JOIN BOOKS b ON l.Item_Code = b.ISBN
+    JOIN MEMBER m ON l.Member_IDNum = m.MEMBER_IDNum
+    ORDER BY l.Due_Date
+  `;
+
+  db.query(sql, (err, rows) => {
+    if (err) return res.json({ success: false });
+    res.json({ success: true, items: rows });
+  });
+});
+
+app.post("/api/staff/checkout/return", (req, res) => {
+  const { logId } = req.body;
+
+  db.query(
+    `SELECT Item_Code FROM LOG WHERE Log_ID=?`,
+    [logId],
+    (_, rows) => {
+      db.query(
+        `DELETE FROM LOG WHERE Log_ID=?`,
+        [logId],
+        () => {
+          db.query(
+            `UPDATE BOOKS SET Book_inventory = Book_inventory + 1 WHERE ISBN=?`,
+            [rows[0].Item_Code]
+          );
+          res.json({ success: true });
+        }
+      );
+    }
+  );
+});
+
+/* =====================================================
+   USER CHECKOUTS
+===================================================== */
 app.get("/api/my/checkouts", (req, res) => {
   db.query(
     `
@@ -286,9 +314,74 @@ app.get("/api/my/checkouts", (req, res) => {
     FROM LOG l
     JOIN BOOKS b ON l.Item_Code = b.ISBN
     WHERE l.Member_IDNum=?
-  `,
+    `,
     [req.query.memberId],
     (_, rows) => res.json({ success: true, items: rows })
+  );
+});
+
+/* =====================================================
+   STAFF: GET BOOK BY ISBN
+===================================================== */
+app.get("/api/staff/book/:isbn", (req, res) => {
+  db.query(
+    `
+    SELECT ISBN, Title, Author_fName, Author_lName,
+           Book_Home, Book_inventory,
+           coverImage IS NOT NULL AS hasImage,
+           imageMime
+    FROM BOOKS
+    WHERE ISBN = ?
+    LIMIT 1
+    `,
+    [req.params.isbn],
+    (err, rows) => {
+      if (err || !rows.length) return res.json({ success: false });
+      res.json({ success: true, book: rows[0] });
+    }
+  );
+});
+
+/* =====================================================
+   STAFF: GET MEMBER
+===================================================== */
+app.get("/api/staff/member/:id", (req, res) => {
+  const sql = `
+    SELECT *
+    FROM MEMBER
+    WHERE MEMBER_IDNum = ?
+    LIMIT 1
+  `;
+
+  db.query(sql, [req.params.id], (err, rows) => {
+    if (err || rows.length === 0) return res.json({ success: false });
+    res.json({ success: true, member: rows[0] });
+  });
+});
+
+/* =====================================================
+   STAFF: UPDATE MEMBER
+===================================================== */
+app.post("/api/staff/member/save", (req, res) => {
+  const {
+    memberId, firstName, lastName,
+    dob, street, city, state, zip
+  } = req.body;
+
+  const sql = `
+    UPDATE MEMBER
+    SET First_Name=?, Last_Name=?, Date_of_Birth=?,
+        Street_Address=?, City=?, State=?, Zip_Code=?
+    WHERE MEMBER_IDNum=?
+  `;
+
+  db.query(
+    sql,
+    [firstName, lastName, dob, street, city, state, zip, memberId],
+    (err) => {
+      if (err) return res.json({ success: false });
+      res.json({ success: true });
+    }
   );
 });
 
@@ -296,5 +389,5 @@ app.get("/api/my/checkouts", (req, res) => {
    START SERVER
 ===================================================== */
 app.listen(80, () => {
-  console.log("✅ Server running on port 80");
+  console.log("Server running on port 80");
 });
