@@ -7,9 +7,7 @@ import fs from "fs";
 
 const app = express();
 
-/* =====================================================
-   BASIC CONFIG
-===================================================== */
+//Basic Config
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -17,9 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use(express.static(path.join(__dirname, "public")));
 
-/* =====================================================
-   DATABASE CONNECTION
-===================================================== */
+//Database Connection
 const db = mysql.createPool({
   host: "34.138.215.83",
   user: "nodeUser",
@@ -32,9 +28,7 @@ const db = mysql.createPool({
   },
 });
 
-/* =====================================================
-   AUTH / LOGIN
-===================================================== */
+//Login and Authentication
 app.post("/api/login", (req, res) => {
   const { identifier, password } = req.body;
   if (!identifier || !password) return res.json({ success: false });
@@ -77,9 +71,7 @@ app.post("/api/login", (req, res) => {
   });
 });
 
-/* =====================================================
-   PROFILE
-===================================================== */
+//Edit Profile, Member
 app.get("/api/getUserProfile", (req, res) => {
   const { memberId } = req.query;
   if (!memberId) return res.json({ success: false });
@@ -152,9 +144,7 @@ app.post("/api/editProfile", (req, res) => {
   );
 });
 
-/* =====================================================
-   IMAGE API
-===================================================== */
+//Image Handling 
 app.get("/api/book/cover/:isbn", (req, res) => {
   const fallbackPath = path.join(__dirname, "public", "images", "noimg.jpg");
 
@@ -172,9 +162,7 @@ app.get("/api/book/cover/:isbn", (req, res) => {
   );
 });
 
-/* =====================================================
-   BROWSE & SEARCH
-===================================================== */
+//Browse and Search
 app.get("/api/browse", (_, res) => {
   db.query(
     `
@@ -208,9 +196,7 @@ app.get("/api/results", (req, res) => {
   );
 });
 
-/* =====================================================
-   CHECKOUT SYSTEM
-===================================================== */
+//Checkouts
 app.post("/api/staff/checkout", (req, res) => {
   const { memberId, isbn } = req.body;
 
@@ -240,24 +226,7 @@ app.post("/api/staff/checkout", (req, res) => {
   );
 });
 
-/* =====================================================
-   STAFF CHECKOUTS (OLD — RENAMED ONLY)
-===================================================== */
-app.get("/api/staff/checkouts_old", (_, res) => {
-  db.query(
-    `
-    SELECT l.Log_ID, l.Member_IDNum, b.Title,
-           l.Checkout_Date, l.Due_Date
-    FROM LOG l
-    JOIN BOOKS b ON l.Item_Code = b.ISBN
-    `,
-    (_, rows) => res.json({ success: true, items: rows })
-  );
-});
-
-/* =====================================================
-   STAFF CHECKOUTS (ACTIVE — WITH MEMBER NAMES)
-===================================================== */
+//View Checkouts, Staff
 app.get("/api/staff/checkouts", (req, res) => {
   const sql = `
     SELECT
@@ -303,9 +272,7 @@ app.post("/api/staff/checkout/return", (req, res) => {
   );
 });
 
-/* =====================================================
-   USER CHECKOUTS
-===================================================== */
+//View Checkouts, Member
 app.get("/api/my/checkouts", (req, res) => {
   db.query(
     `
@@ -320,9 +287,7 @@ app.get("/api/my/checkouts", (req, res) => {
   );
 });
 
-/* =====================================================
-   STAFF: GET BOOK BY ISBN
-===================================================== */
+//Load Book Staff
 app.get("/api/staff/book/:isbn", (req, res) => {
   db.query(
     `
@@ -342,9 +307,7 @@ app.get("/api/staff/book/:isbn", (req, res) => {
   );
 });
 
-/* =====================================================
-   STAFF: GET MEMBER
-===================================================== */
+//Edit Profile, Staff
 app.get("/api/staff/member/:id", (req, res) => {
   const sql = `
     SELECT *
@@ -359,9 +322,7 @@ app.get("/api/staff/member/:id", (req, res) => {
   });
 });
 
-/* =====================================================
-   STAFF: UPDATE MEMBER
-===================================================== */
+//Edit Profile, Staff
 app.post("/api/staff/member/save", (req, res) => {
   const {
     memberId, firstName, lastName,
@@ -385,9 +346,7 @@ app.post("/api/staff/member/save", (req, res) => {
   );
 });
 
-/* =====================================================
-   STAFF: SAVE / UPDATE BOOK (MANAGE CATALOG)
-===================================================== */
+//Manage Catalog
 import multer from "multer";
 
 const upload = multer({
@@ -456,9 +415,7 @@ app.post("/api/staff/book/save", upload.single("cover"), (req, res) => {
 });
 
 
-/* =====================================================
-   START SERVER
-===================================================== */
+//Start Server
 app.listen(80, () => {
   console.log("Server running on port 80");
 });
