@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
   loadCheckouts();
 });
 
-/* ===== RENDER SINGLE CHECKOUT ===== */
+// Check out 
 function renderCheckoutItem(c) {
   return `
     <div class="checkout-item">
@@ -50,7 +50,7 @@ function renderCheckoutItem(c) {
   `;
 }
 
-/* ===== LOAD CHECKOUTS ===== */
+//Load Check Outs
 async function loadCheckouts() {
   const container = document.getElementById("checkoutList");
   const data = await apiGET("/api/staff/checkouts");
@@ -71,7 +71,7 @@ async function loadCheckouts() {
   });
 }
 
-/* ===== RETURN BOOK ===== */
+//Return Book
 async function markReturned(logId) {
   if (!confirm("Mark this item as returned?")) return;
 
