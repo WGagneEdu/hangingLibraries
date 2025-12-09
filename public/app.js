@@ -1,8 +1,6 @@
 // public/app.js
 
-/* ============================================================
-   SESSION HELPERS
-============================================================ */
+//Session helpers
 function getSession() {
   return {
     memberId: localStorage.getItem("sessionMemberId"),
@@ -24,9 +22,7 @@ function logout() {
   window.location.href = "login.html";
 }
 
-/* ============================================================
-   NAVBAR SETUP
-============================================================ */
+//Navbar Setup
 function setupNavbar() {
   const loginBtn = document.getElementById("loginLogoutBtn");
   const profileBtn = document.getElementById("profileBtn");
@@ -64,9 +60,7 @@ function setupNavbar() {
   }
 }
 
-/* ============================================================
-   STAFF GUARD
-============================================================ */
+//Staff Restriction Pages
 function staffGuard() {
   const { memberId, role } = getSession();
   if (!memberId || role !== "staff") {
@@ -75,9 +69,7 @@ function staffGuard() {
   }
 }
 
-/* ============================================================
-   API HELPERS
-============================================================ */
+//API Helpers
 async function apiGET(url) {
   try {
     const res = await fetch(url);
@@ -100,16 +92,12 @@ async function apiPOST(url, body) {
   }
 }
 
-/* ============================================================
-   URL & SEARCH HELPERS
-============================================================ */
+//URL Helpers
 function getQueryParam(param) {
   return new URL(window.location.href).searchParams.get(param);
 }
 
-/* ============================================================
-   RENDER HELPERS
-============================================================ */
+//Render Helpers
 function renderBookCard(book) {
   return `
     <div class="book-card">
@@ -123,9 +111,7 @@ function renderBookCard(book) {
   `;
 }
 
-/* ============================================================
-   BOOK MODAL + CHECKOUT
-============================================================ */
+//Book Checkout and Book Modal
 function enableBookClick(containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -186,9 +172,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (closeBtn) closeBtn.onclick = closeBookModal;
 });
 
-/* ============================================================
-   EXPOSE GLOBALS (✅ REQUIRED ADDITIONS)
-============================================================ */
 window.setupNavbar = setupNavbar;
 window.apiGET = apiGET;
 window.apiPOST = apiPOST;
