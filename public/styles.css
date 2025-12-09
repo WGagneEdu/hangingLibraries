@@ -419,3 +419,13 @@ textarea {
   max-width: 100%;
   height: auto;
 }
+
+/* === BOOK COVER SIZE LOCK (ADDED ONLY) === */
+.book-card img,
+.book-cover {
+  max-height: 200px;
+  width: auto;
+  object-fit: contain;
+  margin: 0 auto 10px auto;
+  display: block;
+}

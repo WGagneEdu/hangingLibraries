@@ -386,6 +386,77 @@ app.post("/api/staff/member/save", (req, res) => {
 });
 
 /* =====================================================
+   STAFF: SAVE / UPDATE BOOK (MANAGE CATALOG)
+===================================================== */
+import multer from "multer";
+
+const upload = multer({
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB image limit
+});
+
+app.post("/api/staff/book/save", upload.single("cover"), (req, res) => {
+  const {
+    isbn,
+    title,
+    authorFirst,
+    authorLast,
+    publisher,
+    pubDate,
+    bookHome,
+    inventory
+  } = req.body;
+
+  let coverImage = null;
+  let imageMime = null;
+
+  if (req.file) {
+    coverImage = req.file.buffer;
+    imageMime = req.file.mimetype.split("/")[1];
+  }
+
+  const sql = `
+    INSERT INTO BOOKS
+      (ISBN, Title, Author_fName, Author_lName, Publisher,
+       Date_Published, Book_Home, Book_inventory, coverImage, imageMime)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE
+      Title = VALUES(Title),
+      Author_fName = VALUES(Author_fName),
+      Author_lName = VALUES(Author_lName),
+      Publisher = VALUES(Publisher),
+      Date_Published = VALUES(Date_Published),
+      Book_Home = VALUES(Book_Home),
+      Book_inventory = VALUES(Book_inventory),
+      coverImage = IFNULL(VALUES(coverImage), coverImage),
+      imageMime = IFNULL(VALUES(imageMime), imageMime)
+  `;
+
+  db.query(
+    sql,
+    [
+      isbn,
+      title,
+      authorFirst,
+      authorLast,
+      publisher,
+      pubDate || null,
+      bookHome,
+      inventory,
+      coverImage,
+      imageMime
+    ],
+    (err) => {
+      if (err) {
+        console.error(err);
+        return res.json({ success: false });
+      }
+      res.json({ success: true });
+    }
+  );
+});
+
+
+/* =====================================================
    START SERVER
 ===================================================== */
 app.listen(80, () => {
