@@ -17,7 +17,7 @@
 
 <div class="content-card">
 
-  <!-- MEMBER LOOKUP -->
+  <!-- Member Lookup -->
   <div class="form-group">
     <label for="searchMember">Member ID</label>
     <input id="searchMember" type="number">
@@ -26,7 +26,7 @@
 
   <hr>
 
-  <!-- MEMBER DATA -->
+  <!-- Member Data -->
   <div class="form-group">
     <label>Member ID</label>
     <input id="memberId" disabled>
@@ -85,7 +85,7 @@ const city         = document.getElementById("city");
 const state        = document.getElementById("state");
 const zip          = document.getElementById("zip");
 
-/* ===== LOAD MEMBER ===== */
+//Load Member
 async function lookupMember() {
   const id = searchMember.value.trim();
   if (!id) return;
@@ -110,7 +110,7 @@ async function lookupMember() {
   zip.value = m.Zip_Code;
 }
 
-/* ===== SAVE MEMBER ===== */
+//Save Member
 async function saveMember() {
   if (!memberId.value) return;
 
