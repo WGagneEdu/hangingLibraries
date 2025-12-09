@@ -13,7 +13,7 @@
   <button class="nav-btn" onclick="location.href='search.html'">🔍 SEARCH</button>
   <button class="nav-btn" onclick="location.href='browse.html'">☰ BROWSE</button>
 
-  <!-- ✅ STAFF BUTTON (HIDDEN BY DEFAULT) -->
+  <!-- Staff Button (hidden for nonstaff) -->
   <button
     class="nav-btn"
     id="staffBtn"
@@ -45,7 +45,7 @@
   document.addEventListener("DOMContentLoaded", () => {
     setupNavbar();
 
-    // ✅ STAFF-ONLY VISIBILITY
+    //Visible only to staff
     const role = localStorage.getItem("role");
     if (role === "staff") {
       document.getElementById("staffBtn").style.display = "inline-flex";
