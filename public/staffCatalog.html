@@ -5,12 +5,10 @@
   <title>Manage Catalog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- ✅ CORRECT CSS PATH -->
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-
-<!-- NAVBAR -->
+  
 <div class="navbar">
   <button class="nav-btn" onclick="location.href='index.html'">🏛 HOME</button>
   <button class="nav-btn" onclick="location.href='staff.html'">🛠 STAFF</button>
@@ -20,7 +18,7 @@
 
 <div class="content-card">
 
-  <!-- ISBN SEARCH -->
+  <!-- ISBN Lookup -->
   <div class="form-group">
     <label for="searchISBN">Search ISBN</label>
     <input id="searchISBN" type="text">
@@ -29,7 +27,7 @@
 
   <hr>
 
-  <!-- BOOK INFO -->
+  <!-- Book Info -->
   <div class="form-group">
     <label for="isbn">ISBN</label>
     <input id="isbn">
@@ -72,7 +70,7 @@
     <input id="inventory" type="number">
   </div>
 
-  <!-- COVER IMAGE -->
+  <!-- Book Cover -->
   <div class="form-group">
     <label>Cover Image</label>
     <div style="text-align:center; margin-bottom:10px;">
@@ -90,9 +88,8 @@
 
 </div>
 
-<!-- ✅ SCRIPT AT BOTTOM SO DOM IS READY -->
 <script>
-/* ===== ELEMENT BINDINGS ===== */
+  
 const searchISBN   = document.getElementById("searchISBN");
 const isbn         = document.getElementById("isbn");
 const title        = document.getElementById("title");
@@ -105,7 +102,7 @@ const inventory    = document.getElementById("inventory");
 const cover        = document.getElementById("cover");
 const preview      = document.getElementById("coverPreview");
 
-/* ===== LOAD BOOK BY ISBN ===== */
+/* ===== Load Book By ISBN ===== */
 async function loadBook() {
   const isbnVal = searchISBN.value.trim();
   if (!isbnVal) return;
@@ -139,7 +136,7 @@ async function loadBook() {
   }
 }
 
-/* ===== SAVE BOOK ===== */
+/* ===== Save Book ===== */
 async function saveBook() {
   const fd = new FormData();
 
@@ -165,7 +162,7 @@ async function saveBook() {
   alert(data.success ? "Book saved" : "Save failed");
 }
 
-/* ===== IMAGE PREVIEW ===== */
+/* ===== Image Preview ===== */
 cover.addEventListener("change", () => {
   if (cover.files.length === 0) return;
   preview.src = URL.createObjectURL(cover.files[0]);
