@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Search Results – Hanging Libraries</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="navbar">
+  <button class="nav-btn" onclick="location.href='index.html'">🏛 HOME</button>
+  <button class="nav-btn" onclick="location.href='search.html'">🔍 SEARCH</button>
+  <button class="nav-btn" onclick="location.href='browse.html'">☰ BROWSE</button>
+  <button class="nav-btn" id="profileBtn">👤 PROFILE</button>
+  <button class="nav-btn" id="loginLogoutBtn">🔐 LOGIN</button>
+</div>
+
+<div class="page-title">SEARCH RESULTS</div>
+<div id="resultsContainer" class="results-grid"></div>
+
+<!-- BOOK MODAL -->
+<div id="bookModal" class="modal hidden">
+  <div class="modal-content">
+    <h2 id="modalTitle"></h2>
+    <p id="modalAuthor"></p>
+    <p id="modalISBN"></p>
+    <p id="modalInventory"></p>
+
+    <div class="modal-buttons">
+      <button id="checkoutBtn" class="primary-btn">Check Out</button>
+      <button id="closeModalBtn" class="secondary-btn">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+window.refreshBooks = loadResults;
+
+function renderBookCard(book) {
+  return `
+    <div class="book-card">
+      <img
+        class="book-cover"
+        src="/api/book/cover/${book.ISBN}"
+        alt="Book cover"
+      >
+      <div class="book-title">${book.Title}</div>
+      <div class="book-author">
+        ${book.Author_fName || ""} ${book.Author_lName || ""}
+      </div>
+      <div class="book-meta">
+        ISBN: ${book.ISBN}<br>
+        Home: ${book.Book_Home}<br>
+        Copies: ${book.Book_inventory}
+      </div>
+    </div>
+  `;
+}
+
+async function loadResults() {
+  const query = getQueryParam("query");
+  const container = document.getElementById("resultsContainer");
+  if (!query) return;
+
+  const data = await apiGET(`/api/results?query=${encodeURIComponent(query)}`);
+  if (!data.success) {
+    container.innerHTML = "<p>No results found.</p>";
+    return;
+  }
+
+  container.innerHTML = data.data.map(renderBookCard).join("");
+  enableBookClick("resultsContainer");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  setupNavbar();
+  loadResults();
+});
+</script>
+
+</body>
+</html>

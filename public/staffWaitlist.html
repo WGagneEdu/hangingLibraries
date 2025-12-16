@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Waitlists – Hanging Libraries</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="navbar">
+  <button class="nav-btn" onclick="location.href='index.html'">🏛 HOME</button>
+  <button class="nav-btn" onclick="location.href='search.html'">🔍 SEARCH</button>
+  <button class="nav-btn" onclick="location.href='browse.html'">☰ BROWSE</button>
+  <button class="nav-btn" onclick="location.href='staff.html'">🛠 STAFF DASHBOARD</button>
+  <button class="nav-btn" id="loginLogoutBtn">🔐 LOGIN</button>
+</div>
+
+<div class="page-title">MANAGE WAITLISTS</div>
+
+<div class="content-card">
+  <div class="form-row">
+    <div class="form-group">
+      <label for="waitIsbn">Item Code / ISBN</label>
+      <input type="text" id="waitIsbn" placeholder="Matches HOLD.Item_Code">
+    </div>
+    <div class="form-group">
+      <label for="waitMemberId">Member ID (for Add)</label>
+      <input type="number" id="waitMemberId" placeholder="MEMBER_IDNum">
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="secondary-btn" onclick="clearWaitlistView()">Clear</button>
+    <button class="primary-btn" onclick="loadWaitlist()">Load Waitlist</button>
+    <button class="primary-btn" onclick="addToWaitlist()">Add to Waitlist</button>
+  </div>
+
+  <div id="waitlistContainer" style="margin-top:20px;"></div>
+</div>
+
+<script src="app.js"></script>
+<script>
+staffGuard();
+
+document.addEventListener("DOMContentLoaded", () => {
+  setupNavbar();
+});
+
+function clearWaitlistView() {
+  document.getElementById("waitIsbn").value = "";
+  document.getElementById("waitMemberId").value = "";
+  document.getElementById("waitlistContainer").innerHTML = "";
+}
+
+async function loadWaitlist() {
+  const itemCode = document.getElementById("waitIsbn").value.trim();
+  if (!itemCode) {
+    alert("Enter an Item Code / ISBN.");
+    return;
+  }
+
+  const container = document.getElementById("waitlistContainer");
+  container.innerHTML = "Loading...";
+
+  const data = await apiGET("/api/staff/waitlist?itemCode=" + encodeURIComponent(itemCode));
+  container.innerHTML = "";
+
+  if (!data.success || !data.items || data.items.length === 0) {
+    container.innerHTML = "<p>No waitlist entries for this item.</p>";
+    return;
+  }
+
+  const title = data.bookTitle || "(Unknown Title)";
+  const block = document.createElement("div");
+  block.innerHTML = `<div class="book-title"><b>${title}</b> – Item Code: ${itemCode}</div>`;
+
+  block.innerHTML += data.items.map(renderWaitlistEntry).join("");
+  container.appendChild(block);
+
+  // Attach remove button handlers
+  container.querySelectorAll("button[data-holdnum]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const holdNum = btn.getAttribute("data-holdnum");
+      removeFromWaitlist(holdNum);
+    });
+  });
+}
+
+async function addToWaitlist() {
+  const itemCode = document.getElementById("waitIsbn").value.trim();
+  const memberId = document.getElementById("waitMemberId").value.trim();
+
+  if (!itemCode || !memberId) {
+    alert("Enter both Item Code and Member ID.");
+    return;
+  }
+
+  const data = await apiPOST("/api/staff/waitlist/add", { itemCode, memberId });
+  if (data.success) {
+    alert("Added to waitlist.");
+    loadWaitlist();
+  } else {
+    alert("Failed to add to waitlist.");
+  }
+}
+
+async function removeFromWaitlist(holdNum) {
+  if (!confirm("Remove this waitlist entry?")) return;
+
+  const data = await apiPOST("/api/staff/waitlist/remove", { holdNum });
+  if (data.success) {
+    loadWaitlist();
+  } else {
+    alert("Failed to remove.");
+  }
+}
+</script>
+
+</body>
+</html>
